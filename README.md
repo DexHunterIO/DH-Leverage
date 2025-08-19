@@ -1,17 +1,20 @@
 # Adding Leverage to DexHunter
 
-## Intro
+## Introduction
 
-This document will cover the overall project plan for the integration of Leveraged Swaps to dexhunter.
-This Project will Limit itself to the use of Snek Token for the core Implementation( it can be easily expanded by using other TokenIds) as it it is the token with the broadest liquidity on cardano.
+This document outlines the overall project plan for integrating leveraged swaps into DexHunter. The project will initially focus on using Snek Token for the core implementation, as it has the broadest liquidity on Cardano. However, the system can be easily expanded to support other token IDs.
 
 ## Infrastructure
-To run this project there needs to be a cardano-node with unix-socket connection for the Data parsing. A mongoDB server for data persistance a redis server for quick access data and caches and a Dexhunter API-Key for the trading side.
 
+To run this project, the following components are required:
+- A Cardano node with Unix socket connection for data parsing
+- A MongoDB server for data persistence
+- A Redis server for quick data access and caching
+- A DexHunter API key for the trading functionality
 
-To gather data we will leverage [Gouroboros](https://github.com/blinklabs-io/gouroboros)
+For data gathering, we will leverage [Gouroboros](https://github.com/blinklabs-io/gouroboros).
 
-The Program can be eventually be run as a stand alone by a user leveraging TCP connections to nodes.
+The program can eventually be run as a standalone application by users leveraging TCP connections to nodes.
 
 ## Available Leverage Sources
 - [Liqwid](https://liqwid.finance/)
@@ -22,17 +25,15 @@ The Program can be eventually be run as a stand alone by a user leveraging TCP c
 ## Lending Protocol Flows
 
 
-## Overall layout
+## Overall Layout
 
-Following are the diagrams that indicate How orders will work. Generic example and Specific Long/short.
-Here you can find a Specific by source abstract flow
-which covers borrowing,lending and cancelling orders on lending sources.
+The following diagrams illustrate how orders will work, including generic examples and specific long/short scenarios. You can find source-specific abstract flows that cover borrowing, lending, and canceling orders on lending sources:
 
 - [Levvy](common/sources/levvy/levvy.md)
 - [Liqwid](common/sources/liqwid/liqwid.md)
 - [Flow](common/sources/flow/flow.md)
 
-### Abstract Leveraged Order Flow:
+### Abstract Leveraged Order Flow
 ![generic](images/flow_diagram.png)
 
 #### Long Order Flow
@@ -43,28 +44,27 @@ which covers borrowing,lending and cancelling orders on lending sources.
 
 #### Fulfill Short Flow
 
-### Leverage Sources Implementations
-The Leverage Sources need to handle data parsing from blocks to Borrow or lend operations.
-They need to provide Functions to do the following Operations:
+### Leverage Source Implementations
+Leverage sources must handle data parsing from blocks to borrow or lend operations. They need to provide functions for the following operations:
 
-- Place Lend/ Borrow order
-- Cancel Lend / Borrow order
-- Fulfill Lend/ Borrow order
-- Analyze Block for new Info
+- Place lend/borrow orders
+- Cancel lend/borrow orders
+- Fulfill lend/borrow orders
+- Analyze blocks for new information
 
 
-## TODOs:
-- [ ] Create Initial Golang Structs to handle data gathering
-- [ ] Initial vendor Interfaces for adding Leverage sources
-- [ ] Wire Data gathering from Node data feed
-- [ ] Create the various Leverage sources implementations
-- [ ] Create Engine that decides from which source the leverage should be taken
-- [ ] Add Stand in burner wallet for handling the lent deposit and the subsequent trade
-- [ ] Handle Trade using Dexhunter API
+## TODOs
+- [ ] Create initial Golang structs to handle data gathering
+- [ ] Develop initial vendor interfaces for adding leverage sources
+- [ ] Wire data gathering from node data feed
+- [ ] Create various leverage source implementations
+- [ ] Create engine that determines from which source the leverage should be taken
+- [ ] Add stand-in burner wallet for handling lent deposits and subsequent trades
+- [ ] Handle trades using DexHunter API
 
 
 ## Deliverables
-The full project is going to be public under this repo.
+The complete project will be publicly available in this repository.
 
-### Disclaimer:
-`The Data provided in this File can be changed at any times with development as things might change and/or some initial ideas would not work or need changing.`
+### Disclaimer
+*The information provided in this document is subject to change during development as requirements evolve or initial approaches require modification.*
