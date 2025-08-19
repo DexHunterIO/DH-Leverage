@@ -33,7 +33,7 @@ which covers borrowing,lending and cancelling orders on lending sources.
 - [Flow](common/sources/flow/flow.md)
 
 ### Abstract Leveraged Order Flow:
-![generic](flow_diagram.png)
+![generic](images/flow_diagram.png)
 
 #### Long Order Flow
 

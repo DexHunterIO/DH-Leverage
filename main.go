@@ -9,6 +9,7 @@ func main() {
 	args := os.Args[1:]
 	if len(args) < 1 {
 		fmt.Println("Usage: go run main.go <command>")
+		fmt.Println("Use 'go run main.go help' to see available commands.")
 		return
 	}
 	command := args[0]
