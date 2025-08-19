@@ -28,9 +28,9 @@ Following are the diagrams that indicate How orders will work. Generic example a
 Here you can find a Specific by source abstract flow
 which covers borrowing,lending and cancelling orders on lending sources.
 
-- [Levvy](levvy.md)
-- [Liqwid](liqwid.md)
-- [flow](flow.md)
+- [Levvy](common/sources/levvy/levvy.md)
+- [Liqwid](common/sources/liqwid/liqwid.md)
+- [Flow](common/sources/flow/flow.md)
 
 ### Abstract Leveraged Order Flow:
 ![generic](flow_diagram.png)
@@ -65,7 +65,6 @@ They need to provide Functions to do the following Operations:
 
 ## Deliverables
 The full project is going to be public under this repo.
-
 
 ### Disclaimer:
 `The Data provided in this File can be changed at any times with development as things might change and/or some initial ideas would not work or need changing.`
