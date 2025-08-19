@@ -24,17 +24,24 @@ The Program can be eventually be run as a stand alone by a user leveraging TCP c
 
 ## Overall layout
 
+Following are the diagrams that indicate How orders will work. Generic example and Specific Long/short.
+Here you can find a Specific by source abstract flow
+which covers borrowing,lending and cancelling orders on lending sources.
 
-### Leveraged Order Flow:
+- [Levvy](levvy.md)
+- [Liqwid](liqwid.md)
+- [flow](flow.md)
+
+### Abstract Leveraged Order Flow:
 ![generic](flow_diagram.png)
 
-#### Specific Long
+#### Long Order Flow
 
-#### Specific Short
+#### Short Order Flow
 
-#### Fulfill Long
+#### Fulfill Long Flow
 
-#### Fulfill Short
+#### Fulfill Short Flow
 
 ### Leverage Sources Implementations
 The Leverage Sources need to handle data parsing from blocks to Borrow or lend operations.
@@ -44,7 +51,6 @@ They need to provide Functions to do the following Operations:
 - Cancel Lend / Borrow order
 - Fulfill Lend/ Borrow order
 - Analyze Block for new Info
-
 
 
 ## TODOs:
