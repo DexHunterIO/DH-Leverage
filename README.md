@@ -34,7 +34,7 @@ The Program can be eventually be run as a stand alone by a user leveraging TCP c
 
 #### Fulfill Long
 
-### Fulfill Short
+#### Fulfill Short
 
 ### Leverage Sources Implementations
 The Leverage Sources need to handle data parsing from blocks to Borrow or lend operations.
@@ -56,6 +56,10 @@ They need to provide Functions to do the following Operations:
 - [ ] Add Stand in burner wallet for handling the lent deposit and the subsequent trade
 - [ ] Handle Trade using Dexhunter API
 
- 
+
+## Deliverables
+The full project is going to be public under this repo.
+
+
 ### Disclaimer:
 `The Data provided in this File can be changed at any times with development as things might change and/or some initial ideas would not work or need changing.`
