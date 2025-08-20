@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb_password
+      MONGO_INITDB_DATABASE: mydb
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass redis_password
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  cardano-node:
+    image: ghcr.io/blinklabs-io/cardano-node
+    container_name: cardano-node
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      NETWORK: mainnet
+    volumes:
+      - node_data:/data/db
+      - node_ipc:/ipc
+    networks:
+      - app-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  node_data:
+    driver: local
+  node_ipc:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
