@@ -52,17 +52,6 @@ Leverage sources must handle data parsing from blocks to borrow or lend operatio
 - Fulfill lend/borrow orders
 - Analyze blocks for new information
 
-
-## TODOs
-- [ ] Create initial Golang structs to handle data gathering
-- [ ] Develop initial vendor interfaces for adding leverage sources
-- [ ] Wire data gathering from node data feed
-- [ ] Create various leverage source implementations
-- [ ] Create engine that determines from which source the leverage should be taken
-- [ ] Add stand-in burner wallet for handling lent deposits and subsequent trades
-- [ ] Handle trades using DexHunter API
-
-
 ## Deliverables
 The complete project will be publicly available in this repository.
 
