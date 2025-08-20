@@ -16,19 +16,11 @@ DH-Leverage is a comprehensive leveraged trading system designed to bring advanc
 
 ### Problem Statement
 
-The Cardano DeFi ecosystem lacks a unified platform for leveraged trading that:
-- Aggregates liquidity from multiple lending protocols
-- Provides seamless integration with existing DEX infrastructure
-- Offers professional-grade trading tools for advanced users
-- Maintains decentralization while improving user experience
+The Cardano DeFi ecosystem currently lacks a unified platform for leveraged trading that aggregates liquidity from multiple lending protocols, allows for direct trades with existing dexes and improves the user experience.
 
 ### Solution Approach
 
-DH-Leverage addresses these challenges by:
-1. **Protocol Abstraction**: Creating a unified interface for different lending protocols
-2. **Smart Order Routing**: Automatically selecting the best lending rates and liquidity sources
-3. **Real-Time Data Processing**: Using Gouroboros for efficient blockchain data ingestion
-4. **Modular Architecture**: Allowing easy integration of new protocols and features
+These challenges are addressed by creating a unified interface to integrate different lending protocols, an engine that handles selection and routing to the various protocol for best rates and liquidity and allows easy integration of new protocols and features as they are required by the echosystem.
 
 ### Initial Implementation
 
@@ -38,9 +30,9 @@ The project will initially focus on **Snek Token** as the core implementation to
 - Strong community support and adoption
 - Established price discovery mechanisms
 
-The architecture is designed for easy expansion to support additional tokens including:
-- Stablecoins (DJED, iUSD, USDA)
-- Blue-chip Cardano native tokens
+The choice to support only SNEK at the beginning is due to the wide adoption of the token and its presence across all protocols within the cardano Ecosystem.
+
+The architecture will be designed for easy expansion to support additional tokens including stablecoins Like USDA, USDM,DJED and other Bluechips
 
 ### Target Users
 
@@ -237,7 +229,11 @@ Leverage sources must handle data parsing from blocks to borrow or lend operatio
 - Fulfill lend/borrow orders
 - Analyze blocks for new information
 
+This will allow for the protocol to be expanded to include various other tokens and sources without too much hassle.
+
 ## Requirements
+
+The requirements here provided are a mere estimation as of the current project, they might change as the development progresses.
 
 ### System Requirements
 
@@ -288,6 +284,8 @@ The following ports must be available:
 
 
 ### How to run
+
+Following you will find a quick guide on how to run the protocol for your own usage or to deploy and use within your app.
 
 #### Quick Start
 
