@@ -169,26 +169,7 @@ If you prefer manual setup over the quickstart script:
 ## Deliverables
 The complete project will be publicly available in this repository.
 
-## Milestone Timeline
-
-```mermaid
-timeline
-    title Project Development Timeline
-    
-    Milestone 1 : August 2025
-    
-    Milestone 2 : September 2025
-    
-    Milestone 3 : November 2025
-    
-    Milestone 4 : January 2026
-    
-    Milestone 5 : February 2026
-    
-    Final Milestone : March 2026
-```
-
-### Key Dates
+### Project Timelines
 
 | Phase | Date | Status |
 |-------|------|--------|
