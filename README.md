@@ -6,6 +6,8 @@
 
 DH-Leverage is a comprehensive leveraged trading system designed to bring advanced DeFi capabilities to the Cardano ecosystem through DexHunter. This project bridges the gap between traditional spot trading and sophisticated leveraged positions by integrating multiple lending protocols with decentralized exchange infrastructure.
 
+[Catalyst' Proposal](https://milestones.projectcatalyst.io/projects/1200019)
+
 ### Key Features
 
 - **Multi-Protocol Integration**: Seamlessly connects with leading Cardano lending protocols (Liqwid, Levvy, Flow)
@@ -166,6 +168,15 @@ If you prefer manual setup over the quickstart script:
 
 ## Deliverables
 The complete project will be publicly available in this repository.
+
+
+### Milestone Timeline
+Milestone 1: 21st August 2025
+Milestone 2: 21st September 2025
+Milestone 3: 21st November 2025
+Milestone 4: 21st January 2025
+Milestone 5: 21st February 2026
+Final Milestone: March 2026
 
 ### Disclaimer
 *The information provided in this document is subject to change during development as requirements evolve or initial approaches require modification.*
