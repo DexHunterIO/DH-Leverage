@@ -172,11 +172,17 @@ The complete project will be publicly available in this repository.
 
 ### Milestone Timeline
 Milestone 1: 21st August 2025
+
 Milestone 2: 21st September 2025
+
 Milestone 3: 21st November 2025
+
 Milestone 4: 21st January 2025
+
 Milestone 5: 21st February 2026
+
 Final Milestone: March 2026
+
 
 ### Disclaimer
 *The information provided in this document is subject to change during development as requirements evolve or initial approaches require modification.*
