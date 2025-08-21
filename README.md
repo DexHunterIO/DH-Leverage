@@ -169,20 +169,44 @@ If you prefer manual setup over the quickstart script:
 ## Deliverables
 The complete project will be publicly available in this repository.
 
+## Milestone Timeline
 
-### Milestone Timeline
-Milestone 1: 21st August 2025
+```mermaid
+timeline
+    title Project Development Timeline
+    
+    Milestone 1 : August 2025
+    
+    Milestone 2 : September 2025
+    
+    Milestone 3 : November 2025
+    
+    Milestone 4 : January 2026
+    
+    Milestone 5 : February 2026
+    
+    Final Milestone : March 2026
+```
 
-Milestone 2: 21st September 2025
+### Key Dates
 
-Milestone 3: 21st November 2025
+| Phase | Date | Status |
+|-------|------|--------|
+| **Milestone 1** | August 2025 | In Progress |
+| **Milestone 2** | September 2025 | Upcoming |
+| **Milestone 3** | November 2025 | Planned |
+| **Milestone 4** | January 2026 | Planned |
+| **Milestone 5** | February 2026 | Planned |
+| **Final Milestone** | March 2026 | Planned |
 
-Milestone 4: 21st January 2025
+---
 
-Milestone 5: 21st February 2026
+### Project Catalyst Proposal
 
-Final Milestone: March 2026
+**Full Details:** [View our complete proposal and milestones on Project Catalyst](https://milestones.projectcatalyst.io/projects/1200019/milestones/1)
 
+---
 
 ### Disclaimer
-*The information provided in this document is subject to change during development as requirements evolve or initial approaches require modification.*
+
+> *The information provided in this document is subject to change during development as requirements evolve or initial approaches require modification.*
