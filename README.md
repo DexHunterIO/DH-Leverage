@@ -1,14 +1,17 @@
 # Adding Leverage to DexHunter
-
 Approved by Nikita Melentjevs - CEO & Edoardo Salvioni - Blockchain Lead on 18.08.2025
 
 ## Introduction
-
 ### Project Overview
-
 DH-Leverage is a comprehensive leveraged trading system designed to bring advanced DeFi capabilities to the Cardano ecosystem through DexHunter. This project bridges the gap between traditional spot trading and sophisticated leveraged positions by integrating multiple lending protocols with decentralized exchange infrastructure.
 
-[Catalyst' Proposal](https://milestones.projectcatalyst.io/projects/1200019)
+[Catalyst Proposal](https://milestones.projectcatalyst.io/projects/1200019)
+
+## Additional Resources
+
+**Wireframe:** [Flow Diagram](https://github.com/DexHunterIO/DH-Leverage/blob/main/images/flow_diagram.png)
+
+**Architecture:** [Technical Architecture Documentation](https://github.com/DexHunterIO/DH-Leverage/blob/main/architecture.md)
 
 ### Key Features
 
