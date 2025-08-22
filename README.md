@@ -1,5 +1,7 @@
 # Adding Leverage to DexHunter
 
+Approved by Nikita Melentjevs - CEO & Edoardo Salvioni - Blockchain Lead on 18.08.2025
+
 ## Introduction
 
 ### Project Overview
