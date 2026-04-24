@@ -47,14 +47,14 @@ type EstimateRequest struct {
 }
 
 type EstimateResponse struct {
-	TotalInput     float64 `json:"total_input"`
-	TotalOutput    float64 `json:"total_output"`
-	NetPrice       float64 `json:"net_price"`
+	TotalInput      float64 `json:"total_input"`
+	TotalOutput     float64 `json:"total_output"`
+	NetPrice        float64 `json:"net_price"`
 	NetPriceReverse float64 `json:"net_price_reverse,omitempty"`
-	PriceImpact    float64 `json:"price_impact,omitempty"`
-	Fees           Fees    `json:"fees"`
-	Splits         []Split `json:"splits"`
-	PossibleRoutes []Route `json:"possible_routes,omitempty"`
+	PriceImpact     float64 `json:"price_impact,omitempty"`
+	Fees            Fees    `json:"fees"`
+	Splits          []Split `json:"splits"`
+	PossibleRoutes  []Route `json:"possible_routes,omitempty"`
 }
 
 // --- /swap/reverseEstimate --------------------------------------------------
@@ -120,7 +120,7 @@ type CancelRequest struct {
 }
 
 type CancelResponse struct {
-	CBOR                     string  `json:"cbor"`
+	CBOR                      string  `json:"cbor"`
 	AdditionalCancellationFee float64 `json:"additional_cancellation_fee"`
 }
 
@@ -149,17 +149,17 @@ type LimitOrderResponse struct {
 // --- /swap/orders/{address} -------------------------------------------------
 
 type Order struct {
-	OrderID    string  `json:"order_id"`
-	Status     string  `json:"status"`
-	TokenIn    string  `json:"token_in"`
-	TokenOut   string  `json:"token_out"`
-	AmountIn   float64 `json:"amount_in"`
-	AmountOut  float64 `json:"amount_out"`
-	Dex        string  `json:"dex"`
-	TxHash     string  `json:"tx_hash"`
-	CreatedAt  int64   `json:"created_at"`
-	UpdatedAt  int64   `json:"updated_at"`
-	OrderType  string  `json:"order_type,omitempty"`
+	OrderID   string  `json:"order_id"`
+	Status    string  `json:"status"`
+	TokenIn   string  `json:"token_in"`
+	TokenOut  string  `json:"token_out"`
+	AmountIn  float64 `json:"amount_in"`
+	AmountOut float64 `json:"amount_out"`
+	Dex       string  `json:"dex"`
+	TxHash    string  `json:"tx_hash"`
+	CreatedAt int64   `json:"created_at"`
+	UpdatedAt int64   `json:"updated_at"`
+	OrderType string  `json:"order_type,omitempty"`
 }
 
 // --- /swap/wallet -----------------------------------------------------------
@@ -211,14 +211,14 @@ type CancelDCARequest struct {
 }
 
 type DCAOrder struct {
-	ID               string  `json:"id"`
-	Status           string  `json:"status"`
-	TokenIn          string  `json:"token_in"`
-	TokenOut         string  `json:"token_out"`
-	RemainingCycles  int     `json:"remaining_cycles"`
-	NextExecutionMs  int64   `json:"next_execution"`
-	LastExecutionMs  int64   `json:"last_execution,omitempty"`
-	AmountPerCycle   float64 `json:"amount_per_cycle"`
+	ID              string  `json:"id"`
+	Status          string  `json:"status"`
+	TokenIn         string  `json:"token_in"`
+	TokenOut        string  `json:"token_out"`
+	RemainingCycles int     `json:"remaining_cycles"`
+	NextExecutionMs int64   `json:"next_execution"`
+	LastExecutionMs int64   `json:"last_execution,omitempty"`
+	AmountPerCycle  float64 `json:"amount_per_cycle"`
 }
 
 // --- /charts ----------------------------------------------------------------

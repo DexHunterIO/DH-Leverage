@@ -27,8 +27,8 @@ type rawTx struct {
 // in Conway — decoding as cbor.RawMessage keeps whichever form the
 // protocol produced.
 const (
-	wsKeyVkeyWitnesses   uint64 = 0
-	wsKeyRedeemer        uint64 = 5
+	wsKeyVkeyWitnesses uint64 = 0
+	wsKeyRedeemer      uint64 = 5
 )
 
 // MergeTxWitnesses takes an unsigned tx CBOR (as returned by a protocol's

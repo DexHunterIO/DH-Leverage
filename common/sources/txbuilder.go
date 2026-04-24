@@ -12,12 +12,12 @@ import "context"
 // (`getUsedAddresses` / `getChangeAddress`). Wallet/UTXOs come from the
 // frontend; the backend doesn't talk to the wallet directly.
 type TxParams struct {
-	Source           string   `json:"source"`           // "liqwid" / "surf"
-	Action           string   `json:"action"`           // "supply" / "withdraw" / "borrow" (set by handler)
-	MarketID         string   `json:"marketId"`         // protocol-internal id
-	Amount           float64  `json:"amount"`           // whole units of the borrow/supply asset
-	CollateralAmount float64  `json:"collateralAmount"` // borrow only — whole units of collateral asset
-	Full             bool     `json:"full"`             // withdraw only — subtract 1 raw unit to avoid exchange-rate overshoot
+	Source           string  `json:"source"`           // "liqwid" / "surf"
+	Action           string  `json:"action"`           // "supply" / "withdraw" / "borrow" (set by handler)
+	MarketID         string  `json:"marketId"`         // protocol-internal id
+	Amount           float64 `json:"amount"`           // whole units of the borrow/supply asset
+	CollateralAmount float64 `json:"collateralAmount"` // borrow only — whole units of collateral asset
+	Full             bool    `json:"full"`             // withdraw only — subtract 1 raw unit to avoid exchange-rate overshoot
 
 	// Wallet context — provided by the frontend after CIP-30 enable.
 	Wallet         string   `json:"wallet"`         // "lace", "eternl", "nami", …

@@ -119,12 +119,12 @@ func TestLoanIdMatches(t *testing.T) {
 		txHash string
 		want   bool
 	}{
-		{"abc123def456", true},       // matches transactionId
-		{"abc123def456-0", true},     // matches full id
-		{"abc123def456-1", false},    // different index
-		{"xyz789", false},            // no match
-		{"abc123", false},            // partial — no match
-		{"", false},                  // empty
+		{"abc123def456", true},    // matches transactionId
+		{"abc123def456-0", true},  // matches full id
+		{"abc123def456-1", false}, // different index
+		{"xyz789", false},         // no match
+		{"abc123", false},         // partial — no match
+		{"", false},               // empty
 	}
 	for _, tc := range cases {
 		got := loanIdMatches(loan, tc.txHash)

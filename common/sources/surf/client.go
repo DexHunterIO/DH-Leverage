@@ -32,7 +32,7 @@ const (
 	adaPricePath         = "/api/getAdaPrice"
 	activitiesPath       = "/api/getActivities"
 	allPositionsPath     = "/api/getAllPositions"
-	allOrdersPath        = "/api/getAllOrders"   // undocumented but works; single call for all pools
+	allOrdersPath        = "/api/getAllOrders" // undocumented but works; single call for all pools
 	depositLiquidityPath = "/api/depositLiquidity"
 	withdrawLiqPath      = "/api/withdrawLiquidity"
 	borrowPath           = "/api/borrow"
@@ -212,7 +212,7 @@ type surfActivity struct {
 	Type             string  `json:"type"`
 	Address          string  `json:"address"`
 	Amount           float64 `json:"amount"`
-	Asset            string  `json:"asset"`           // policyId+hexName, "" for ADA
+	Asset            string  `json:"asset"` // policyId+hexName, "" for ADA
 	CollateralAmount float64 `json:"collateralAmount"`
 	CollateralAsset  string  `json:"collateralAsset"` // policyId+hexName, "" for ADA
 	PoolID           string  `json:"poolId"`
@@ -265,11 +265,11 @@ type allPositionsResponse struct {
 // GET /api/getOrders?poolId=X&address=Y (per the official API docs at
 // surflending.org/api-docs).
 type surfOrder struct {
-	PoolID          string  `json:"poolId"`
-	Type            string  `json:"type"`
-	Address         string  `json:"address"`
-	Amount          float64 `json:"amount"`
-	Asset           struct {
+	PoolID  string  `json:"poolId"`
+	Type    string  `json:"type"`
+	Address string  `json:"address"`
+	Amount  float64 `json:"amount"`
+	Asset   struct {
 		PolicyID  string `json:"policyId"`
 		AssetName string `json:"assetName"`
 	} `json:"asset"`
@@ -374,14 +374,14 @@ func (c *Client) fetchPositions(ctx context.Context, address string, assets asse
 			borrowAsset := assets.lookup(p.PrincipalAsset.PolicyID + p.PrincipalAsset.AssetName)
 			colAsset := assets.lookup(p.CollateralAsset.PolicyID + p.CollateralAsset.AssetName)
 			// Use OutRef (current on-chain UTxO) for close/repay, not
-		// BorrowID (original tx). The UTxO moves when the position
-		// gets rebatched for interest accrual.
-		outTx := p.OutRef.TxHash
-		outIdx := p.OutRef.OutputIndex
-		if outTx == "" {
-			outTx = p.BorrowID.TxHash
-			outIdx = p.BorrowID.OutputIndex
-		}
+			// BorrowID (original tx). The UTxO moves when the position
+			// gets rebatched for interest accrual.
+			outTx := p.OutRef.TxHash
+			outIdx := p.OutRef.OutputIndex
+			if outTx == "" {
+				outTx = p.BorrowID.TxHash
+				outIdx = p.BorrowID.OutputIndex
+			}
 			out = append(out, sources.Order{
 				Source:           Name,
 				ID:               p.BorrowID.TxHash,
@@ -959,7 +959,10 @@ func (c *Client) BuildClose(ctx context.Context, p sources.TxCloseParams) (*sour
 // freshOutRef queries /api/getAllPositions for the given address and
 // returns the current outRef for the first position matching poolID.
 // Returns nil if not found (caller falls back to the cached outRef).
-func (c *Client) freshOutRef(ctx context.Context, address, poolID string) (*struct{ TxHash string; OutputIndex int }, error) {
+func (c *Client) freshOutRef(ctx context.Context, address, poolID string) (*struct {
+	TxHash      string
+	OutputIndex int
+}, error) {
 	url := fmt.Sprintf("%s%s?address=%s", c.base, allPositionsPath, address)
 	resp, err := fetchJSON[allPositionsResponse](ctx, c.http, url)
 	if err != nil {
@@ -974,7 +977,10 @@ func (c *Client) freshOutRef(ctx context.Context, address, poolID string) (*stru
 					tx = p.BorrowID.TxHash
 					idx = p.BorrowID.OutputIndex
 				}
-				return &struct{ TxHash string; OutputIndex int }{
+				return &struct {
+					TxHash      string
+					OutputIndex int
+				}{
 					TxHash: tx, OutputIndex: idx,
 				}, nil
 			}

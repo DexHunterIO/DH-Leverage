@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	koiosBase            = "https://api.koios.rest/api/v1"
-	koiosAddressInfo     = "/address_info"
-	koiosAddressAssets   = "/address_assets"
-	defaultCacheTTL      = 30 * time.Second
-	defaultKoiosTimeout  = 15 * time.Second
+	koiosBase           = "https://api.koios.rest/api/v1"
+	koiosAddressInfo    = "/address_info"
+	koiosAddressAssets  = "/address_assets"
+	defaultCacheTTL     = 30 * time.Second
+	defaultKoiosTimeout = 15 * time.Second
 )
 
 // Balance is the normalized wallet state we serve from /api/wallet/balance.

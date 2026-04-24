@@ -26,21 +26,21 @@ type Asset struct {
 // Depth fields are denominated in USD so markets are comparable across
 // sources without dragging Cardano price data into the routing layer.
 type Market struct {
-	Source                string  `json:"source"`
-	PoolID                string  `json:"poolId"`
-	Collateral            Asset   `json:"collateral"`
-	Borrow                Asset   `json:"borrow"`
+	Source     string `json:"source"`
+	PoolID     string `json:"poolId"`
+	Collateral Asset  `json:"collateral"`
+	Borrow     Asset  `json:"borrow"`
 	// ReceiptAsset is the qToken / fToken / cToken minted to suppliers when
 	// they deposit into this market. The frontend uses it to detect supply
 	// positions by scanning the user's wallet — if the wallet holds this
 	// asset, the user has a supply position in this market.
-	ReceiptAsset          Asset   `json:"receiptAsset,omitempty"`
+	ReceiptAsset Asset `json:"receiptAsset,omitempty"`
 	// CollateralID is the protocol-internal identifier for the collateral
 	// leg of this row. Liqwid uses it in BorrowTransactionInputCollateral
 	// (shape "<qTokenMarketId>.<policyHash>", e.g. "Ada.a04ce7..."). Surf
 	// doesn't need an explicit collateral id — collateral is inferred
 	// from the pool. Optional; empty string if not applicable.
-	CollateralID          string  `json:"collateralId,omitempty"`
+	CollateralID string `json:"collateralId,omitempty"`
 	// SupplyExchangeRate is "whole borrow asset per 1 whole receipt token",
 	// so the frontend can convert a receipt balance back to the underlying
 	// amount the user supplied: underlying = receiptQty * supplyExchangeRate.
@@ -54,9 +54,9 @@ type Market struct {
 	LiquidationThreshold  float64 `json:"liquidationThreshold"`
 	// MinSupply is the smallest whole-unit amount the protocol accepts
 	// for a supply or borrow on this market. 0 = no minimum.
-	MinSupply             float64 `json:"minSupply,omitempty"`
-	Active                bool    `json:"active"`
-	URL                   string  `json:"url,omitempty"`
+	MinSupply float64 `json:"minSupply,omitempty"`
+	Active    bool    `json:"active"`
+	URL       string  `json:"url,omitempty"`
 }
 
 // Order is a normalized lending/borrowing order from any source.
@@ -86,8 +86,8 @@ type Order struct {
 	// OutputIndex is the UTxO index paired with TxHash — together they
 	// form the outRef that Surf's /api/repay and /api/cancelOrder use
 	// to identify the position/order. Liqwid doesn't need it.
-	OutputIndex      int     `json:"outputIndex,omitempty"`
-	TimeMs           int64   `json:"timeMs"`
+	OutputIndex int   `json:"outputIndex,omitempty"`
+	TimeMs      int64 `json:"timeMs"`
 }
 
 // OrderQuery is a best-effort filter set; sources ignore options they don't
@@ -109,16 +109,16 @@ const (
 	OrderClosed  = "closed"
 	OrderPending = "pending"
 
-	TypeBorrow           = "borrow"
-	TypeRepay            = "repay"
-	TypeRepayCollateral  = "repayWithCollateral"
-	TypeLend             = "lend"
-	TypeDeposit          = "deposit"
-	TypeWithdraw         = "withdraw"
-	TypeCancelWithdraw   = "cancelWithdraw"
-	TypeLeveragedBorrow  = "leveragedBorrow"
-	TypeLiquidation      = "liquidation"
-	TypeUnknown          = "unknown"
+	TypeBorrow          = "borrow"
+	TypeRepay           = "repay"
+	TypeRepayCollateral = "repayWithCollateral"
+	TypeLend            = "lend"
+	TypeDeposit         = "deposit"
+	TypeWithdraw        = "withdraw"
+	TypeCancelWithdraw  = "cancelWithdraw"
+	TypeLeveragedBorrow = "leveragedBorrow"
+	TypeLiquidation     = "liquidation"
+	TypeUnknown         = "unknown"
 )
 
 // Source is a leverage source. Each implementation lives in its own

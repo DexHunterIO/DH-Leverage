@@ -201,9 +201,9 @@ type rawMarket struct {
 	Utilization  float64 `json:"utilization"`
 	ExchangeRate float64 `json:"exchangeRate"`
 	Batching     bool    `json:"batching"`
-	Frozen      bool    `json:"frozen"`
-	Delisting   bool    `json:"delisting"`
-	Parameters  struct {
+	Frozen       bool    `json:"frozen"`
+	Delisting    bool    `json:"delisting"`
+	Parameters   struct {
 		MinValue             float64              `json:"minValue"`
 		CollateralParameters []rawCollateralParam `json:"collateralParameters"`
 	} `json:"parameters"`
@@ -365,7 +365,7 @@ type loansEnvelope struct {
 	Liqwid struct {
 		Data struct {
 			Loans struct {
-				TotalCount int        `json:"totalCount"`
+				TotalCount int       `json:"totalCount"`
 				Results    []rawLoan `json:"results"`
 			} `json:"loans"`
 		} `json:"data"`
@@ -745,10 +745,10 @@ func submitViaKoios(ctx context.Context, hc *http.Client, signedHex string) (str
 //     We need the fresh outstanding amount + collateral list because
 //     both grow with interest and collateral can be multi-asset.
 //  2. Build modifyBorrow with:
-//       - txId: loan.id (compound "<txHash>-<index>")
-//       - amount: 0 (absolute target = zero remaining debt)
-//       - redeemCollateral: true        (release the collateral)
-//       - collaterals: [{id: "<market>.<policyId>", amount: qTokenRaw}, ...]
+//     - txId: loan.id (compound "<txHash>-<index>")
+//     - amount: 0 (absolute target = zero remaining debt)
+//     - redeemCollateral: true        (release the collateral)
+//     - collaterals: [{id: "<market>.<policyId>", amount: qTokenRaw}, ...]
 //  3. Return the unsigned CBOR for CIP-30 signing.
 const txModifyBorrowMutation = `query ModifyBorrow($input: ModifyBorrowTransactionInput!) {
   liqwid { transactions { modifyBorrow(input: $input) { cbor } } }
@@ -836,7 +836,7 @@ func (c *Client) BuildClose(ctx context.Context, p sources.TxCloseParams) (*sour
 		"changeAddress":  fallback(p.ChangeAddress, p.Address),
 		"otherAddresses": other,
 		// amount: 0 = absolute target (zero remaining debt).
-		"amount":     0,
+		"amount":      0,
 		"collaterals": collaterals,
 		"utxos":       p.UTXOs,
 	}
@@ -950,6 +950,7 @@ func (c *Client) findLoanByTxHash(ctx context.Context, pkh, txHash string) (*raw
 //   - loan.transactionId = "<hash>"
 //   - loan.id = "<hash>-<index>" (compound)
 //   - loan.id = "<hash>" (bare — some older loans)
+//
 // Match any of them so the frontend can pass whichever we stored.
 func loanIdMatches(l *rawLoan, txHash string) bool {
 	if l.TransactionID == txHash {
@@ -1014,8 +1015,8 @@ func (c *Client) BuildBorrow(ctx context.Context, p sources.TxParams) (*sources.
 // of the underlying asset (e.g. 100 ADA) into Liqwid's expected qToken
 // raw-unit amount (what BorrowTransactionInputCollateral.amount wants).
 //
-//  qToken_whole = underlying_whole / exchangeRate      // rate = ADA per qAda whole
-//  qToken_raw   = qToken_whole × 10^qTokenDecimals
+//	qToken_whole = underlying_whole / exchangeRate      // rate = ADA per qAda whole
+//	qToken_raw   = qToken_whole × 10^qTokenDecimals
 func underlyingToQTokenRaw(underlyingWhole, exchangeRate float64, qTokenDec int) float64 {
 	if exchangeRate <= 0 {
 		// Unknown rate — fall back to 1:1 and let Liqwid's LTV check decide.
@@ -1103,4 +1104,3 @@ func (c *Client) liqwidCollateralForRow(ctx context.Context, poolID string) (*li
 	}
 	return out, nil
 }
-
