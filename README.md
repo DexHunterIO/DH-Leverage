@@ -175,15 +175,15 @@ If you prefer manual setup over the quickstart script:
 The complete project will be publicly available in this repository.
 
 ### Project Timelines
-
+Due to health reasons the project timeline has been delayed
 | Phase | Date | Status |
 |-------|------|--------|
-| **Milestone 1** | August 2025 | In Progress |
-| **Milestone 2** | September 2025 | Upcoming |
-| **Milestone 3** | November 2025 | Planned |
-| **Milestone 4** | January 2026 | Planned |
-| **Milestone 5** | February 2026 | Planned |
-| **Final Milestone** | March 2026 | Planned |
+| **Milestone 1** | August 2025 | Completed |
+| **Milestone 2** | February 2026 | Completed |
+| **Milestone 3** | March 2026 | Planned |
+| **Milestone 4** | May 2026 | Planned |
+| **Milestone 5** | June 2026 | Planned |
+| **Final Milestone** | July 2026 | Planned |
 
 ---
 
