@@ -1,14 +1,10 @@
 
+> **See also:** the running development log of decisions, integrations and known issues lives in [development-process.md](development-process.md).
+
 ## Infrastructure
 
-### Core Components
 
-#### Blockchain Infrastructure
-- **Cardano Node**: Full node with Unix socket connection for real-time blockchain data parsing
-  - Syncs with Cardano mainnet for transaction monitoring
-  - Provides access to UTxO state and smart contract interactions
-  - Can be run locally or accessed via remote TCP connection
-  - Alternative: Use existing node infrastructure via TCP/IP connection
+### Core Components
 
 #### Data Storage Layer
 - **MongoDB (v7.0+)**: Primary database for persistent data storage
@@ -32,46 +28,41 @@
 
 ### Data Pipeline Architecture
 
-#### Blockchain Data Ingestion
-We leverage [Gouroboros](https://github.com/blinklabs-io/gouroboros) for efficient blockchain data processing:
-- **Chain Sync Protocol**: Real-time synchronization with Cardano network
-- **Block Processing**: Parses and filters relevant transactions
-- **UTxO Tracking**: Monitors lending protocol smart contracts
-- **Event Streaming**: Pushes relevant events to processing pipeline
+#### Protocol Data Ingestion
+DH-Leverage talks to each lending protocol over its native HTTP API rather
+than running its own Cardano node. Per-source notes:
+
+- **Liqwid** — public GraphQL at `https://v2.api.liqwid.finance/graphql`
+  for markets, loans and CBOR transaction builders.
+- **Surf** — same-origin private REST routes under
+  `https://surflending.org/api/*` (`getAllPoolInfos`, `getAllPositions`,
+  `depositLiquidity`, `withdrawLiquidity`, `borrow`, …).
+- **Wallet balances** — public Koios endpoints (`address_info`,
+  `address_assets`).
 
 #### Processing Architecture
-- **Worker Processes**: Dedicated workers for different lending protocols
-- **Event Queue**: Redis-based queue for asynchronous processing
-- **API Gateway**: RESTful API for client interactions
-- **WebSocket Server**: Real-time updates for active positions
+- **API Gateway**: Fiber-based RESTful API the frontend talks to.
+- **Per-source clients**: One Go package per protocol implementing a
+  shared `Source` interface for markets/orders and `TxBuilder` interface
+  for supply/withdraw/borrow.
+- **Caching**: Redis-backed wrappers for markets, orders and wallet
+  balances; in-memory fallback when Redis is unreachable.
+- **Persistence**: MongoDB upsert of every fresh markets snapshot for
+  historical analysis.
 
 ### Deployment Modes
 
-#### Full Node Deployment
-Complete infrastructure with local Cardano node:
-- Self-contained and independent
-- No external dependencies for blockchain data
-- Higher resource requirements
-- Suitable for production environments
-
-#### Light Deployment
-Using external node infrastructure:
-- Lower resource requirements
-- Depends on external node reliability
-- Faster initial setup
-- Suitable for development and testing
-
-#### Standalone Mode (Future)
-The system is designed to eventually support standalone operation:
-- Direct TCP connections to remote Cardano nodes
-- Minimal infrastructure requirements
-- User-friendly deployment
-- Suitable for individual traders
+#### Light Deployment (current)
+The protocol APIs handle all on-chain interaction; DH-Leverage only needs
+MongoDB + Redis locally. No Cardano node required.
+- Lowest resource requirements
+- Fastest setup
+- Suitable for development and most production deployments
 
 ## Available Leverage Sources
-- [Liqwid](https://liqwid.finance/)
-- [Levvy](https://levvy.fi/)
-- [Flow](https://beta.flowcardano.org/)
+- [Liqwid](https://liqwid.finance/) — pooled lending, native GraphQL integration
+- [Surf](https://surflending.org/) — isolated-pool lending, native REST integration
+- [Levvy](https://levvy.fi/) — P2P lending, no public mainnet API today (placeholder integration)
 
 
 ## Lending Protocol Flows
@@ -86,9 +77,9 @@ The DH-Leverage system follows a modular, event-driven architecture designed for
 ### Order Flow Documentation
 
 Detailed protocol-specific implementations can be found in the following documents:
-- [Levvy Protocol Integration](common/sources/levvy/levvy.md) - Flash loan based leverage
 - [Liqwid Protocol Integration](common/sources/liqwid/liqwid.md) - Collateralized lending positions
-- [Flow Protocol Integration](common/sources/flow/flow.md) - Peer-to-peer lending markets
+- [Surf Protocol Integration](common/sources/surf/flow.md) - Isolated-pool lending markets
+- [Levvy Protocol Integration](common/sources/levvy/levvy.md) - P2P NFT/token lending
 
 ### Core Trading Flows
 
@@ -186,3 +177,13 @@ Leverage sources must handle data parsing from blocks to borrow or lend operatio
 - Analyze blocks for new information
 
 This will allow for the protocol to be expanded to include various other tokens and sources without too much hassle.
+
+
+### Milestone Timeline
+! Adjusted timelines due to health reasons.
+Milestone 1: 21st August 2025
+Milestone 2: 21st April 2026
+Milestone 3: 21st may 2026
+Milestone 4: 21st June 2026
+Milestone 5: 21st July 2026
+Final Milestone: July 2026

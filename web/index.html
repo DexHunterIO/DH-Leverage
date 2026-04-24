@@ -1,0 +1,2070 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DH-Leverage</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --panel: #131920;
+    --panel-2: #0d1117;
+    --panel-hover: #1a2230;
+    --border: #1e2a36;
+    --border-light: #2a3644;
+    --text: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --muted: #64748b;
+    --accent: #3b82f6;
+    --accent-bg: #2563eb;
+    --accent-hover: #1d4ed8;
+    --error: #ef4444;
+    --error-soft: rgba(239, 68, 68, 0.12);
+    --success: #22c55e;
+    --success-soft: rgba(34, 197, 94, 0.12);
+    --warning: #f59e0b;
+    --warning-soft: rgba(245, 158, 11, 0.12);
+    --liqwid: #f59e0b;
+    --surf: #3b82f6;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: #60a5fa; }
+  main { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* ----- top bar ----- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10, 14, 20, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar {
+    max-width: 1280px; margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    display: flex; align-items: center; gap: 1.5rem;
+  }
+  .brand {
+    font-weight: 800; font-size: 1.1rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em; white-space: nowrap;
+  }
+  .brand:hover { opacity: 0.85; text-decoration: none; }
+  .search-wrap { position: relative; flex: 1; max-width: 420px; }
+  .search-wrap input {
+    width: 100%; padding: 0.5rem 0.85rem 0.5rem 2.2rem;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; color: var(--text); font-size: 0.82rem;
+  }
+  .search-wrap::before {
+    content: '⌕'; position: absolute; left: 0.85rem; top: 50%;
+    transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; pointer-events: none;
+  }
+  .search-wrap input:focus { outline: none; border-color: var(--accent); background: var(--panel-2); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-results {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--panel); border: 1px solid var(--border-light);
+    border-radius: var(--radius); max-height: 360px; overflow-y: auto;
+    display: none; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  }
+  .search-results.open { display: block; }
+  .search-result {
+    padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border);
+    cursor: pointer; display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem;
+  }
+  .search-result:last-child { border-bottom: none; }
+  .search-result:hover { background: var(--panel-hover); }
+  nav { display: flex; gap: 0.15rem; background: var(--panel); border-radius: 999px; padding: 0.2rem; }
+  nav a {
+    padding: 0.4rem 1rem; border-radius: 999px;
+    color: var(--text-secondary); font-size: 0.82rem; font-weight: 500;
+    transition: all 0.15s;
+  }
+  nav a:hover { color: var(--text); background: var(--panel-hover); text-decoration: none; }
+  nav a.active { color: white; background: var(--accent-bg); }
+  .spacer { flex: 1; }
+
+  /* ----- wallet area ----- */
+  #wallet { display: flex; align-items: center; gap: 0.5rem; }
+  #addr-display {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.72rem; color: var(--text-secondary);
+    padding: 0.3rem 0.6rem; background: var(--panel); border-radius: 999px;
+    max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* ----- buttons ----- */
+  button {
+    padding: 0.5rem 1rem; background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); cursor: pointer;
+    font-size: 0.82rem; font-weight: 500; transition: all 0.15s; white-space: nowrap;
+  }
+  button:hover:not(:disabled) { background: var(--panel-hover); border-color: var(--border-light); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary {
+    background: var(--accent-bg); border-color: transparent; color: white;
+    font-weight: 600; box-shadow: 0 1px 3px rgba(37,99,235,0.3);
+  }
+  button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+  button.action { flex: 1; padding: 0.75rem; font-size: 0.9rem; font-weight: 600; border-radius: var(--radius); }
+  button.action.lend { background: var(--success-soft); border-color: rgba(34,197,94,0.3); color: var(--success); }
+  button.action.borrow { background: var(--error-soft); border-color: rgba(239,68,68,0.3); color: var(--error); }
+  button.action.long { background: var(--success-soft); border-color: rgba(34,197,94,0.3); color: var(--success); }
+  button.action.short { background: var(--error-soft); border-color: rgba(239,68,68,0.3); color: var(--error); }
+  button.mini { padding: 0.25rem 0.6rem; font-size: 0.7rem; font-weight: 600; border-radius: 6px; }
+  button.mini + button.mini { margin-left: 0.25rem; }
+  button.mini.lend { background: var(--success-soft); border-color: rgba(34,197,94,0.25); color: var(--success); }
+  button.mini.lend:hover:not(:disabled) { background: rgba(34,197,94,0.2); }
+  button.mini.withdraw { background: var(--error-soft); border-color: rgba(239,68,68,0.25); color: var(--error); }
+  button.mini.withdraw:hover:not(:disabled) { background: rgba(239,68,68,0.2); }
+
+  /* ----- panels & tables ----- */
+  section.page { display: none; }
+  section.page.active { display: block; }
+  h1 { font-size: 1.5rem; margin: 0 0 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: 1rem; margin: 0 0 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.06em; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem;
+  }
+  .page-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;
+  }
+  .page-header h1 { margin: 0; }
+  .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+  .filters select, .filters input {
+    padding: 0.45rem 0.75rem; background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-size: 0.82rem; font-family: inherit;
+  }
+  .filters select:focus, .filters input:focus { outline: none; border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th, td { text-align: left; padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border); }
+  th {
+    background: transparent; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-light); position: sticky; top: 0;
+  }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--text-secondary); }
+  th.sortable .arrow { display: inline-block; width: 0.7rem; opacity: 0.5; margin-left: 0.2rem; }
+  th.sortable.sorted { color: var(--accent); }
+  th.sortable.sorted .arrow { opacity: 1; }
+  tr.row { cursor: pointer; transition: background 0.1s; }
+  tr.row:hover td { background: var(--panel-hover); }
+  tr.row.mine td:first-child { border-left: 2px solid var(--success); padding-left: calc(0.85rem - 2px); }
+  tr.row.mine td { background: rgba(34, 197, 94, 0.03); }
+  tr.row.mine:hover td { background: rgba(34, 197, 94, 0.07); }
+  .mine-badge {
+    display: inline-block; margin-left: 0.35rem; padding: 0.1rem 0.4rem; border-radius: 999px;
+    font-size: 0.6rem; font-weight: 700; background: var(--success-soft); color: var(--success);
+    text-transform: uppercase; letter-spacing: 0.04em; vertical-align: middle;
+  }
+  td.num {
+    text-align: right; font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem;
+  }
+  .pill {
+    display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px;
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .pill.liqwid { background: var(--warning-soft); color: var(--liqwid); }
+  .pill.surf { background: rgba(59, 130, 246, 0.12); color: var(--surf); }
+  .pill.type-lend   { background: var(--success-soft); color: var(--success); }
+  .pill.type-borrow { background: var(--error-soft); color: var(--error); }
+  .pill.type-other  { background: rgba(100, 116, 139, 0.15); color: var(--muted); }
+  .pill.status-active  { background: var(--success-soft); color: var(--success); }
+  .pill.status-pending { background: var(--warning-soft); color: var(--warning); }
+  .pill.status-closed  { background: rgba(100, 116, 139, 0.15); color: var(--muted); }
+  .muted { color: var(--muted); font-size: 0.82rem; }
+  .error { color: var(--error); font-size: 0.82rem; margin-top: 0.5rem; }
+  .empty { color: var(--muted); padding: 2rem; text-align: center; font-size: 0.85rem; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem;
+    color: var(--text-secondary); word-break: break-all;
+    background: var(--panel-2); padding: 0.1rem 0.35rem; border-radius: 4px;
+  }
+
+  /* ----- pair detail ----- */
+  .pair-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+  @media (max-width: 720px) { .pair-grid { grid-template-columns: 1fr; } }
+  .stat { padding: 0.45rem 0; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .stat:last-child { border-bottom: none; }
+  .stat .label { color: var(--muted); font-size: 0.78rem; }
+  .stat .value { font-size: 0.85rem; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .actions-row { display: flex; gap: 0.75rem; }
+  .balance-row { display: flex; justify-content: space-between; padding: 0.5rem 0; }
+  .balance-row .sym { color: var(--muted); }
+  .back { font-size: 0.82rem; margin-bottom: 1rem; display: inline-block; color: var(--text-secondary); }
+  .back:hover { color: var(--accent); }
+
+  /* ----- modals ----- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg); padding: 1.5rem;
+    min-width: 360px; max-width: 480px; width: 100%;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  }
+  .modal h3 { margin: 0 0 0.5rem; font-size: 1.1rem; font-weight: 700; }
+  .modal .muted { margin-bottom: 1rem; font-size: 0.78rem; }
+  .wallet-list { display: flex; flex-direction: column; gap: 0.35rem; }
+  .wallet-item {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.7rem 0.85rem; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer; transition: all 0.15s;
+  }
+  .wallet-item:hover { background: var(--panel-hover); border-color: var(--border-light); }
+  .wallet-item img { width: 28px; height: 28px; border-radius: 6px; }
+  .wallet-item .label { flex: 1; }
+  .wallet-item .name { font-weight: 600; font-size: 0.88rem; }
+  .wallet-item .key { font-size: 0.68rem; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .modal-close { margin-top: 1rem; width: 100%; }
+
+  /* ----- tx modal inputs ----- */
+  #tx-amount, #tx-collateral {
+    width: 100%; padding: 0.6rem 0.85rem;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-size: 0.9rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  #tx-amount:focus, #tx-collateral:focus { outline: none; border-color: var(--accent); }
+
+  /* ----- responsive ----- */
+  @media (max-width: 900px) {
+    .topbar { flex-wrap: wrap; gap: 0.75rem; }
+    .search-wrap { order: 10; max-width: 100%; min-width: 0; }
+    nav { order: 2; }
+    #wallet { order: 3; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <a href="#/pools" class="brand">DH Leverage</a>
+    <div class="search-wrap">
+      <input id="search" type="text" placeholder="Search tokens…" autocomplete="off">
+      <div id="search-results" class="search-results"></div>
+    </div>
+    <div class="spacer"></div>
+    <nav>
+      <a href="#/pools" data-route="pools">Markets</a>
+      <a href="#/orders" data-route="orders">Positions</a>
+      <a href="#/balance" data-route="balance">Wallet</a>
+    </nav>
+    <div id="wallet">
+      <span id="addr-display" title=""></span>
+      <button id="connect" class="primary">Connect Wallet</button>
+      <button id="disconnect" hidden>Disconnect</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ===================== POOLS PAGE ===================== -->
+  <section id="page-pools" class="page">
+    <div class="page-header">
+      <h1>Markets</h1>
+      <div class="filters">
+        <select id="filter-source">
+          <option value="">All protocols</option>
+          <option value="liqwid">Liqwid</option>
+          <option value="surf">Surf</option>
+        </select>
+        <input id="filter-symbol" type="text" placeholder="Filter…" style="width:120px" />
+        <button id="filter-clear">Clear</button>
+      </div>
+    </div>
+    <div id="pools-error" class="error"></div>
+    <div class="panel" style="padding:0; overflow-x:auto">
+      <table id="pools">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="source">Protocol<span class="arrow"></span></th>
+            <th class="sortable" data-sort="collateral">Collateral<span class="arrow"></span></th>
+            <th class="sortable" data-sort="borrow">Borrow<span class="arrow"></span></th>
+            <th class="num sortable" data-sort="totalSuppliedUsd">Supplied<span class="arrow"></span></th>
+            <th class="num sortable" data-sort="availableLiquidityUsd">Available<span class="arrow"></span></th>
+            <th class="num sortable" data-sort="borrowApy">Borrow APY<span class="arrow"></span></th>
+            <th class="num sortable" data-sort="ltv">Max LTV<span class="arrow"></span></th>
+            <th class="num sortable" data-sort="minSupply">Min Supply<span class="arrow"></span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== ORDERS PAGE ===================== -->
+  <section id="page-orders" class="page">
+    <div class="page-header">
+      <h1>My Positions</h1>
+      <button id="orders-refresh" class="primary">Refresh</button>
+    </div>
+    <div class="muted" id="orders-empty-msg">Connect your wallet to view active positions.</div>
+    <div id="orders-error" class="error"></div>
+    <div class="panel" style="padding:0;display:none;overflow-x:auto" id="orders-panel">
+      <table id="orders">
+        <thead>
+          <tr>
+            <th>Protocol</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Asset</th>
+            <th class="num">Size</th>
+            <th>Receipt token</th>
+            <th class="num">APY</th>
+            <th class="num">LTV</th>
+            <th class="num">Health</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== BALANCE PAGE ===================== -->
+  <section id="page-balance" class="page">
+    <div class="page-header">
+      <h1>Wallet</h1>
+      <button id="balance-refresh" class="primary">Refresh</button>
+    </div>
+    <div class="muted" id="balance-empty-msg">Connect your wallet to view balances.</div>
+    <div id="balance-error" class="error"></div>
+    <div id="balance-content" style="display:none">
+      <div class="panel" style="margin-bottom:1.25rem">
+        <h2>Account</h2>
+        <div class="stat"><span class="label">Address</span><span class="value"><code id="balance-address"></code></span></div>
+        <div class="stat"><span class="label">ADA</span><span class="value" id="balance-ada"></span></div>
+        <div class="stat"><span class="label">Tokens</span><span class="value" id="balance-token-count"></span></div>
+        <div class="stat"><span class="label">Fetched</span><span class="value muted" id="balance-fetched"></span></div>
+      </div>
+      <div class="panel" style="padding:0">
+        <table id="balance-tokens">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Policy</th>
+              <th class="num">Quantity</th>
+              <th class="num">Decimals</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TX MODAL ===================== -->
+  <div id="tx-modal" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="tx-modal-title">Build transaction</h3>
+      <div class="muted" id="tx-modal-hint" style="line-height:1.4;word-break:break-all"></div>
+
+      <div style="margin: 1rem 0">
+        <label for="tx-amount" style="display:block;margin-bottom:0.35rem;font-size:0.75rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Amount</label>
+        <input id="tx-amount" type="text" inputmode="decimal" placeholder="0.00" />
+      </div>
+
+      <div id="tx-collateral-row" style="margin: 1rem 0; display:none">
+        <label for="tx-collateral" style="display:block;margin-bottom:0.35rem;font-size:0.75rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Collateral</label>
+        <input id="tx-collateral" type="text" inputmode="decimal" placeholder="0.00" />
+      </div>
+
+      <div id="tx-status" class="muted" style="margin: 0.5rem 0; font-size: 0.78rem"></div>
+      <div id="tx-error" class="error" style="margin: 0.25rem 0; font-size: 0.78rem"></div>
+      <div id="tx-cbor-preview" style="display:none; max-height: 60px; overflow-y: auto; font-family: ui-monospace, Menlo, monospace; font-size: 0.65rem; padding: 0.5rem; background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; word-break: break-all; margin: 0.75rem 0; color: var(--muted)"></div>
+
+      <div style="display:flex; gap:0.5rem; margin-top: 1rem">
+        <button id="tx-build-btn" class="primary" style="flex:1">Confirm</button>
+        <button id="tx-cancel-btn" style="flex:1">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== WALLET PICKER MODAL ===================== -->
+  <div id="wallet-modal" class="modal-backdrop">
+    <div class="modal">
+      <h3>Connect Wallet</h3>
+      <div class="muted">Select a Cardano wallet. Midnight wallets are not supported.</div>
+      <div id="wallet-list" class="wallet-list"></div>
+      <button class="modal-close" id="wallet-modal-close">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===================== PAIR DETAIL PAGE ===================== -->
+  <section id="page-pair" class="page">
+    <a href="#/pools" class="back">← Back to pools</a>
+    <h1 id="pair-title">Pair detail</h1>
+    <div id="pair-error" class="error"></div>
+
+    <div class="pair-grid">
+      <div class="panel">
+        <h2>Pool</h2>
+        <div id="pool-stats"></div>
+      </div>
+      <div class="panel">
+        <h2>Your wallet</h2>
+        <div id="wallet-stats">
+          <div class="muted">Connect Lace to see balances.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Actions</h2>
+      <div class="actions-row">
+        <button class="action lend"   data-action="lend">Lend</button>
+        <button class="action borrow" data-action="borrow">Borrow</button>
+        <button class="action long"   data-action="long">Long</button>
+        <button class="action short"  data-action="short">Short</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+// =================== utilities ===================
+const $ = (s, root = document) => root.querySelector(s);
+const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
+
+const fmtMoney = v => (v == null || v === 0) ? '–' : '$' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
+const fmtPct   = v => (v == null || v === 0) ? '–' : (Number(v) * 100).toFixed(2) + '%';
+const fmtNum   = (v, dp = 4) => (v == null || v === 0) ? '–' : Number(v).toLocaleString(undefined, { maximumFractionDigits: dp });
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+// =================== app state ===================
+const state = {
+  markets: [],
+  marketsErr: null,
+  walletApi: null,
+  walletAddr: null,        // bech32
+  walletPkh: null,         // hex pkh
+  balances: new Map(),     // unit (policyId+assetName, "" for ADA) -> { qty, decimals, ticker }
+  balanceSnapshot: null,   // last /api/wallet/balance response (for Balance page)
+  userBorrowMarkets: new Set(), // "source:marketId" strings for rows where the user has a borrow
+  liqwidReceiptByUnit: new Map(), // borrow-asset unit -> receipt Asset (e.g. ADA unit -> qADA)
+  poolSort: { key: 'availableLiquidityUsd', dir: 'desc' },
+};
+
+// =================== bech32 + CIP-30 helpers ===================
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+function polymod(values) {
+  const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+  let chk = 1;
+  for (const v of values) {
+    const top = chk >>> 25;
+    chk = ((chk & 0x1ffffff) << 5) ^ v;
+    for (let i = 0; i < 5; i++) if ((top >> i) & 1) chk ^= GEN[i];
+  }
+  return chk;
+}
+function hrpExpand(hrp) {
+  const r = [];
+  for (let i = 0; i < hrp.length; i++) r.push(hrp.charCodeAt(i) >> 5);
+  r.push(0);
+  for (let i = 0; i < hrp.length; i++) r.push(hrp.charCodeAt(i) & 31);
+  return r;
+}
+function createChecksum(hrp, data) {
+  const values = hrpExpand(hrp).concat(data).concat([0,0,0,0,0,0]);
+  const mod = polymod(values) ^ 1;
+  const r = [];
+  for (let i = 0; i < 6; i++) r.push((mod >> (5 * (5 - i))) & 31);
+  return r;
+}
+function convertBits(data, fromBits, toBits, pad) {
+  let acc = 0, bits = 0;
+  const r = [];
+  const maxv = (1 << toBits) - 1;
+  for (const value of data) {
+    if (value < 0 || (value >> fromBits) !== 0) return null;
+    acc = (acc << fromBits) | value;
+    bits += fromBits;
+    while (bits >= toBits) {
+      bits -= toBits;
+      r.push((acc >> bits) & maxv);
+    }
+  }
+  if (pad && bits > 0) r.push((acc << (toBits - bits)) & maxv);
+  return r;
+}
+function bech32Encode(hrp, data) {
+  const combined = data.concat(createChecksum(hrp, data));
+  let s = hrp + '1';
+  for (const v of combined) s += BECH32_CHARSET[v];
+  return s;
+}
+function hexToBytes(hex) {
+  const b = [];
+  for (let i = 0; i < hex.length; i += 2) b.push(parseInt(hex.substr(i, 2), 16));
+  return b;
+}
+// CIP-30 returns addresses as CBOR-Hex bytestrings. Decode the CBOR header
+// to get the raw 57-byte address payload (1 header byte + 28 pkh + 28 stake).
+function cardanoBytesFromCborHex(hex) {
+  let bytes = hexToBytes(hex);
+  if (bytes[0] === 0x58) bytes = bytes.slice(2);      // 1-byte length
+  else if (bytes[0] === 0x59) bytes = bytes.slice(3); // 2-byte length
+  else if (bytes[0] === 0x5a) bytes = bytes.slice(5); // 4-byte length
+  else if (bytes[0] >= 0x40 && bytes[0] <= 0x57) bytes = bytes.slice(1);
+  return bytes;
+}
+
+function cardanoAddrFromCborHex(hex) {
+  const bytes = cardanoBytesFromCborHex(hex);
+  const data5 = convertBits(bytes, 8, 5, true);
+  return bech32Encode('addr', data5);
+}
+
+// Extract the 28-byte payment key hash. The address bytes are:
+//   [headerByte][pkh × 28][stakeKeyHash × 28]
+// so the pkh is bytes 1..29.
+function pkhFromCborHex(hex) {
+  const bytes = cardanoBytesFromCborHex(hex);
+  return bytes.slice(1, 29).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// =================== API helpers ===================
+// Replace direct Koios calls with a backend-cached endpoint. The returned
+// Balance is both stored as state.balanceSnapshot (for the Balance page)
+// and flattened into state.balances (unit -> entry) for supply detection.
+async function loadWalletBalance(force = false) {
+  if (!state.walletAddr) return null;
+  const url = `/api/wallet/balance?address=${encodeURIComponent(state.walletAddr)}${force ? '&_=' + Date.now() : ''}`;
+  let bal;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    bal = await r.json();
+  } catch (e) {
+    console.warn('backend balance fetch failed:', e);
+    return null;
+  }
+  state.balanceSnapshot = bal;
+  const map = new Map();
+  // ADA at the empty-unit key so market lookups for ADA just work.
+  map.set('', { qty: (bal.lovelace || 0) / 1e6, decimals: 6, ticker: 'ADA' });
+  for (const t of bal.tokens || []) {
+    const unit = (t.policyId || '') + (t.assetName || '');
+    const dec = Number(t.decimals || 0);
+    const rawQty = Number(t.quantity || 0);
+    const qty = dec > 0 ? rawQty / Math.pow(10, dec) : rawQty;
+    map.set(unit, { qty, decimals: dec, ticker: t.symbol || '' });
+  }
+  state.balances = map;
+  return bal;
+}
+
+// Build an index of Liqwid receipt tokens keyed by their underlying borrow
+// asset's unit. So qADA is reachable via the ADA unit ("" for native ADA),
+// qSNEK via the SNEK policyId+assetName, etc. Used by the Pools page to
+// figure out, for a row whose collateral is X, whether the user holds qX.
+function buildLiqwidReceiptIndex() {
+  const map = new Map();
+  for (const m of state.markets) {
+    if (m.source !== 'liqwid') continue;
+    if (!m.receiptAsset?.policyId && !m.receiptAsset?.assetName) continue;
+    const borrow = m.borrow || {};
+    const underlyingKey = (borrow.policyId || '') + (borrow.assetName || '');
+    if (!map.has(underlyingKey)) map.set(underlyingKey, m.receiptAsset);
+  }
+  state.liqwidReceiptByUnit = map;
+}
+
+async function loadMarkets() {
+  state.marketsErr = null;
+  try {
+    const r = await fetch('/api/markets');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    state.markets = data.markets || [];
+    const errs = Object.entries(data.sources || {}).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`);
+    if (errs.length) state.marketsErr = errs.join('  •  ');
+    buildLiqwidReceiptIndex();
+  } catch (e) {
+    state.marketsErr = e.message;
+  }
+}
+
+async function fetchOrdersForPkh(pkh) {
+  const r = await fetch(`/api/orders?source=liqwid&address=${encodeURIComponent(pkh)}&limit=100`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// Deprecated: kept only for reference; the frontend now uses the backend
+// /api/wallet/balance endpoint which itself talks to Koios with a shared
+// Redis cache. Do not call this.
+async function fetchKoiosBalances(bech32Addr) {
+  const balances = new Map();
+  // ADA
+  try {
+    const r = await fetch('https://api.koios.rest/api/v1/address_info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _addresses: [bech32Addr] }),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      if (data.length) {
+        const lovelace = Number(data[0].balance || 0);
+        balances.set('', { qty: lovelace / 1e6, decimals: 6, ticker: 'ADA' });
+      }
+    }
+  } catch {}
+  // Native tokens — Koios `address_assets` returns one FLAT row per
+  // (address, asset), NOT a nested asset_list. Each row is an asset.
+  try {
+    const r = await fetch('https://api.koios.rest/api/v1/address_assets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _addresses: [bech32Addr] }),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      for (const row of data) {
+        const unit = (row.policy_id || '') + (row.asset_name || '');
+        const dec = Number(row.decimals || 0);
+        const qty = Number(row.quantity || 0) / (dec > 0 ? Math.pow(10, dec) : 1);
+        balances.set(unit, {
+          qty,
+          decimals: dec,
+          ticker: hexToAscii(row.asset_name || '') || '???',
+        });
+      }
+    }
+  } catch (e) { console.warn('koios address_assets failed:', e); }
+  console.log(`fetched ${balances.size} balances for wallet`);
+  return balances;
+}
+
+function hexToAscii(hex) {
+  let s = '';
+  for (let i = 0; i < hex.length; i += 2) {
+    const c = parseInt(hex.substr(i, 2), 16);
+    if (c >= 32 && c < 127) s += String.fromCharCode(c);
+  }
+  return s;
+}
+
+// =================== wallet ===================
+// CIP-30 ApiError codes — surface them so "ApiError" isn't a black box.
+const CIP30_ERRORS = {
+  '-1': 'InvalidRequest',
+  '-2': 'InternalError (wallet may be locked)',
+  '-3': 'Refused (you clicked Reject in the popup, or the dApp is not whitelisted)',
+  '-4': 'AccountChange',
+};
+function describeCip30Error(e) {
+  if (!e || typeof e !== 'object') return String(e);
+  const code = e.code != null ? String(e.code) : null;
+  const label = code != null ? (CIP30_ERRORS[code] || `code ${code}`) : null;
+  const info = e.info || e.message || '';
+  return [label, info].filter(Boolean).join(' — ') || JSON.stringify(e);
+}
+
+// Enumerate every CIP-30-compatible wallet that registered itself on
+// window.cardano. Lace's Cardano wallet is one of these; its Midnight
+// wallet is NOT (Midnight uses window.midnight.mnLace) — but if you have
+// multiple "lace*" entries, the picker lets you pick the right one.
+function listCip30Wallets() {
+  if (!window.cardano) return [];
+  return Object.entries(window.cardano)
+    .filter(([, v]) => v && typeof v.enable === 'function' && typeof v.name === 'string')
+    .map(([key, v]) => ({
+      key,
+      name: v.name,
+      icon: v.icon || '',
+      apiVersion: v.apiVersion || '',
+      ref: v,
+    }));
+}
+
+function openWalletPicker(wallets, onPick) {
+  const list = $('#wallet-list');
+  list.innerHTML = '';
+  for (const w of wallets) {
+    const div = document.createElement('div');
+    div.className = 'wallet-item';
+    div.innerHTML = `
+      ${w.icon ? `<img src="${escapeHtml(w.icon)}" alt="">` : ''}
+      <div class="label">
+        <div class="name">${escapeHtml(w.name)}</div>
+        <div class="key">window.cardano.${escapeHtml(w.key)} · v${escapeHtml(w.apiVersion)}</div>
+      </div>
+    `;
+    div.addEventListener('click', () => {
+      $('#wallet-modal').classList.remove('open');
+      onPick(w);
+    });
+    list.appendChild(div);
+  }
+  $('#wallet-modal').classList.add('open');
+}
+$('#wallet-modal-close').addEventListener('click', () => {
+  $('#wallet-modal').classList.remove('open');
+});
+
+async function connectLace() {
+  const wallets = listCip30Wallets();
+  console.log('Discovered CIP-30 wallets:', wallets);
+  if (!wallets.length) {
+    alert('No CIP-30 wallets detected. Install Lace from https://www.lace.io/');
+    return;
+  }
+  // If exactly one wallet exists, use it directly. Otherwise show a picker
+  // so the user can choose between Lace Cardano vs Midnight vs other CIP-30
+  // wallets that share the window.cardano namespace.
+  if (wallets.length === 1) {
+    return enableWallet(wallets[0]);
+  }
+  openWalletPicker(wallets, enableWallet);
+}
+
+async function enableWallet(w) {
+  $('#connect').disabled = true;
+  console.log(`Enabling wallet: ${w.name} (${w.key})`);
+  try {
+    state.walletApi = await w.ref.enable();
+  } catch (e) {
+    console.error(`${w.name} enable() error:`, e);
+    alert(`${w.name} enable failed: ${describeCip30Error(e)}`);
+    $('#connect').disabled = false;
+    return;
+  }
+  // Sanity-check that we got a Cardano context, not Midnight or something else.
+  try {
+    const networkId = await state.walletApi.getNetworkId();
+    console.log(`${w.name} network id:`, networkId);
+    if (networkId !== 0 && networkId !== 1) {
+      alert(`Wrong network: ${w.name} returned network id ${networkId}, expected 0 (testnet) or 1 (mainnet). Switch to Cardano in your wallet and try again.`);
+      $('#connect').disabled = false;
+      state.walletApi = null;
+      return;
+    }
+  } catch (e) {
+    console.warn('getNetworkId failed (non-fatal):', e);
+  }
+  let used = await state.walletApi.getUsedAddresses();
+  if (!used.length) used = await state.walletApi.getUnusedAddresses();
+  if (!used.length) {
+    $('#addr-display').textContent = 'no addresses';
+    return;
+  }
+  const hex = used[0];
+  try {
+    state.walletPkh = pkhFromCborHex(hex);
+    state.walletAddr = cardanoAddrFromCborHex(hex);
+  } catch (e) {
+    console.warn('address decode failed:', e);
+    // Last-resort fallback to keep something usable.
+    state.walletPkh = hex.slice(6, 62);
+    state.walletAddr = null;
+  }
+  // Persist so we can auto-restore on the next page load.
+  try { localStorage.setItem('walletKey', w.key); } catch {}
+  // Show the bech32 address (truncated) so the user can confirm it's the
+  // Cardano wallet they expected — pkh alone looks alien and was being
+  // mistaken for a Midnight wallet.
+  const display = state.walletAddr
+    ? `${state.walletAddr.slice(0, 14)}…${state.walletAddr.slice(-8)}`
+    : `pkh ${state.walletPkh.slice(0, 8)}…${state.walletPkh.slice(-6)}`;
+  const addrEl = $('#addr-display');
+  addrEl.textContent = display;
+  addrEl.title = state.walletAddr || state.walletPkh; // hover for full address
+  $('#connect').hidden = true;
+  $('#disconnect').hidden = false;
+
+  if (state.walletAddr) {
+    await loadWalletBalance();
+  }
+  // Fire-and-forget: the Pools page wants to know which markets the user
+  // has a borrow in. Load them in the background so the pools view can
+  // mark the user's own rows even if they never open My Orders.
+  loadUserBorrowMarkets().then(() => {
+    if (parseHash().path === '/pools' || parseHash().path === '') renderPools();
+  }).catch(e => console.warn('load user borrows failed:', e));
+
+  // re-render the current page so it picks up the new wallet state
+  route();
+}
+
+// Background fetch: populate state.userBorrowMarkets so the pools page can
+// mark and sort the user's own rows.
+async function loadUserBorrowMarkets() {
+  const set = new Set();
+  const calls = [];
+  if (state.walletPkh) {
+    calls.push(fetch(`/api/orders?source=liqwid&address=${encodeURIComponent(state.walletPkh)}&limit=100`).then(r => r.ok ? r.json() : null));
+  }
+  if (state.walletAddr) {
+    calls.push(fetch(`/api/orders?source=surf&address=${encodeURIComponent(state.walletAddr)}&limit=100`).then(r => r.ok ? r.json() : null));
+  }
+  const results = await Promise.allSettled(calls);
+  for (const r of results) {
+    if (r.status !== 'fulfilled' || !r.value?.orders) continue;
+    for (const o of r.value.orders) {
+      if (o.marketId) set.add(`${o.source}:${o.marketId}`);
+    }
+  }
+  state.userBorrowMarkets = set;
+}
+
+function disconnectWallet() {
+  state.walletApi = null;
+  state.walletAddr = null;
+  state.walletPkh = null;
+  state.balances = new Map();
+  state.balanceSnapshot = null;
+  state.userBorrowMarkets = new Set();
+  try { localStorage.removeItem('walletKey'); } catch {}
+  const addrEl = $('#addr-display');
+  addrEl.textContent = '';
+  addrEl.title = '';
+  $('#connect').hidden = false;
+  $('#connect').disabled = false;
+  $('#connect').textContent = 'Connect Lace';
+  $('#disconnect').hidden = true;
+  // Re-render so orders / pair pages clear their wallet-specific UI.
+  route();
+}
+
+// On boot, try to silently re-enable the wallet the user previously chose.
+// CIP-30's isEnabled() reports whether the dApp is already authorized for
+// this origin, in which case enable() doesn't open a popup.
+async function tryRestoreWallet() {
+  let key;
+  try { key = localStorage.getItem('walletKey'); } catch { return; }
+  if (!key || !window.cardano?.[key]) return;
+  const ref = window.cardano[key];
+  try {
+    if (typeof ref.isEnabled === 'function' && !(await ref.isEnabled())) return;
+  } catch {
+    return;
+  }
+  await enableWallet({ key, name: ref.name || key, ref, icon: ref.icon || '', apiVersion: ref.apiVersion || '' });
+}
+
+// =================== router ===================
+function parseHash() {
+  const h = (location.hash || '#/pools').replace(/^#/, '');
+  const [path, query] = h.split('?');
+  return { path, query: new URLSearchParams(query || '') };
+}
+
+function route() {
+  const { path } = parseHash();
+  $$('section.page').forEach(el => el.classList.remove('active'));
+  $$('nav a').forEach(a => a.classList.remove('active'));
+
+  if (path.startsWith('/pair/')) {
+    const rest = path.slice('/pair/'.length);
+    const [source, ...idParts] = rest.split('/');
+    const poolId = decodeURIComponent(idParts.join('/'));
+    renderPair(source, poolId);
+    $('#page-pair').classList.add('active');
+  } else if (path === '/orders') {
+    renderOrders();
+    $('#page-orders').classList.add('active');
+    $$('nav a[data-route="orders"]').forEach(a => a.classList.add('active'));
+  } else if (path === '/balance') {
+    renderBalance();
+    $('#page-balance').classList.add('active');
+    $$('nav a[data-route="balance"]').forEach(a => a.classList.add('active'));
+  } else {
+    renderPools();
+    $('#page-pools').classList.add('active');
+    $$('nav a[data-route="pools"]').forEach(a => a.classList.add('active'));
+  }
+}
+
+window.addEventListener('hashchange', route);
+
+// =================== pools page ===================
+function poolSortValue(m, key) {
+  switch (key) {
+    case 'source':     return (m.source || '').toLowerCase();
+    case 'collateral': return (m.collateral?.symbol || '').toLowerCase();
+    case 'borrow':     return (m.borrow?.symbol || '').toLowerCase();
+    default:           return Number(m[key] || 0);
+  }
+}
+
+// --- user-activity predicates, used by both the Pools page (highlight) and
+// any future "my markets" filters.
+
+function marketHasUserSupply(m) {
+  // Check if the user holds THIS row's receipt token. Both Surf and
+  // Liqwid expose a receiptAsset on each market row — holding it means
+  // the user has a supply position in THIS specific pool/market.
+  //
+  // Previous Liqwid logic checked the collateral side's qToken, which
+  // wrongly highlighted every row sharing the same collateral (e.g.
+  // holding qADA lit up all 20+ rows with ADA collateral).
+  const r = m.receiptAsset;
+  if (!r || (!r.policyId && !r.assetName)) return false;
+  const unit = (r.policyId || '') + (r.assetName || '');
+  const bal = state.balances.get(unit);
+  return !!(bal && bal.qty > 0);
+}
+
+function marketHasUserBorrow(m) {
+  const set = state.userBorrowMarkets;
+  if (!set || set.size === 0) return false;
+  // Exact and prefix match — Liqwid pool rows are fanned out to
+  // "<market>:<collateral>" but the loan marketId is just "<market>".
+  if (set.has(`${m.source}:${m.poolId}`)) return true;
+  for (const key of set) {
+    const [src, mid] = key.split(':', 2);
+    if (src === m.source && m.poolId.startsWith(mid + ':')) return true;
+  }
+  return false;
+}
+
+function userHasActivity(m) {
+  return marketHasUserSupply(m) || marketHasUserBorrow(m);
+}
+
+// userCollateralForRow returns how much of m.collateral the user can
+// actually use as collateral for this row, in WHOLE units of the
+// underlying asset, plus an approximate USD value.
+//
+//  - Liqwid: collateral = qX held by the wallet. Convert via the X
+//    market's supplyExchangeRate to whole X units.
+//  - Surf: collateral = the raw asset in the wallet. Read directly.
+//
+// Returns null if the user can't collateralize this row.
+function userCollateralForRow(m) {
+  if (!m || !m.collateral) return null;
+  const coll = m.collateral;
+  // Reject only if BOTH policyId and symbol are empty (zero Asset).
+  if (!coll.policyId && !coll.symbol) return null;
+  const colUnit = (coll.policyId || '') + (coll.assetName || '');
+
+  if (m.source === 'liqwid') {
+    // Find the collateral's own market so we can read its receiptAsset
+    // (qToken) and the supply exchange rate needed to convert qToken
+    // balance → underlying units.
+    const colMarket = state.markets.find(x =>
+      x.source === 'liqwid'
+      && (x.borrow?.policyId || '') === (coll.policyId || '')
+      && (x.borrow?.assetName || '') === (coll.assetName || '')
+    );
+    if (!colMarket) return null;
+    const ra = colMarket.receiptAsset;
+    // Parenthesise the null-checks — `!a || !b` is what we meant, not
+    // the earlier operator-precedence hazard.
+    if (!ra || (!ra.policyId && !ra.assetName)) return null;
+    const recUnit = (ra.policyId || '') + (ra.assetName || '');
+    const bal = state.balances.get(recUnit);
+    if (!bal || bal.qty <= 0) return null;
+    const rate = Number(colMarket.supplyExchangeRate || 0);
+    const qty = rate > 0 ? bal.qty * rate : bal.qty;
+    const usd = qty * Number(coll.priceUsd || colMarket.borrow?.priceUsd || 0);
+    return { qty, usd, symbol: coll.symbol };
+  }
+
+  if (m.source === 'surf') {
+    // Surf borrows ask you to deposit fresh collateral, so "valid
+    // collateral" = holding the raw asset in the wallet.
+    const bal = state.balances.get(colUnit);
+    if (!bal || bal.qty <= 0) return null;
+    const usd = bal.qty * Number(coll.priceUsd || 0);
+    return { qty: bal.qty, usd, symbol: coll.symbol };
+  }
+  return null;
+}
+
+// maxBorrowForRow computes a safe max borrow amount in borrow-asset
+// whole units, given the user's available collateral and the row's LTV.
+// Applies an 80% safety margin so the user isn't at immediate
+// liquidation risk. Returns null when we can't compute it.
+function maxBorrowForRow(m, col) {
+  if (!col || !col.usd || !m.borrow?.priceUsd) return null;
+  const ltv = Number(m.ltv || 0);
+  if (ltv <= 0) return null;
+  const safeLTV = ltv * 0.8;
+  const maxBorrowUsd = col.usd * safeLTV;
+  const borrowPrice = Number(m.borrow.priceUsd || 0);
+  if (borrowPrice <= 0) return null;
+  return maxBorrowUsd / borrowPrice;
+}
+
+// SAFETY_FACTOR keeps the user's position one notch away from the
+// liquidation threshold. Same value the Borrow button on the pool list
+// uses, so the auto-calc is consistent across both entry points.
+const TX_SAFETY_FACTOR = 0.8;
+
+// maxBorrowFromCollateralAmount: given a collateral amount in whole
+// units, compute the safe max borrow amount in whole units of the
+// borrow asset. Inverse of requiredCollateralForBorrow().
+function maxBorrowFromCollateralAmount(m, collateralAmount) {
+  if (!m || !m.collateral?.priceUsd || !m.borrow?.priceUsd) return null;
+  const ltv = Number(m.ltv || 0);
+  if (ltv <= 0) return null;
+  const collPrice = Number(m.collateral.priceUsd);
+  const borrowPrice = Number(m.borrow.priceUsd);
+  if (collPrice <= 0 || borrowPrice <= 0) return null;
+  const collUsd = collateralAmount * collPrice;
+  const borrowUsd = collUsd * ltv * TX_SAFETY_FACTOR;
+  return borrowUsd / borrowPrice;
+}
+
+// requiredCollateralForBorrow: given a desired borrow amount in whole
+// units of the borrow asset, compute the minimum collateral amount the
+// user needs to post (with the same 80% safety margin baked in).
+function requiredCollateralForBorrow(m, borrowAmount) {
+  if (!m || !m.collateral?.priceUsd || !m.borrow?.priceUsd) return null;
+  const ltv = Number(m.ltv || 0);
+  if (ltv <= 0) return null;
+  const collPrice = Number(m.collateral.priceUsd);
+  const borrowPrice = Number(m.borrow.priceUsd);
+  if (collPrice <= 0 || borrowPrice <= 0) return null;
+  const borrowUsd = borrowAmount * borrowPrice;
+  const collUsd = borrowUsd / (ltv * TX_SAFETY_FACTOR);
+  return collUsd / collPrice;
+}
+
+function renderPools() {
+  console.log('[pools] render — markets=%d balances=%d wallet=%s',
+              state.markets.length, state.balances.size, state.walletAddr ? 'yes' : 'no');
+  $('#pools-error').textContent = state.marketsErr || '';
+  const sourceFilter = $('#filter-source').value;
+  const symbolFilter = $('#filter-symbol').value.trim().toLowerCase();
+  const tbody = $('#pools tbody');
+  tbody.innerHTML = '';
+  let rows = [...state.markets];
+  if (sourceFilter) rows = rows.filter(m => m.source === sourceFilter);
+  if (symbolFilter) {
+    rows = rows.filter(m =>
+      (m.borrow?.symbol || '').toLowerCase().includes(symbolFilter) ||
+      (m.collateral?.symbol || '').toLowerCase().includes(symbolFilter)
+    );
+  }
+  // Sort by the active column, but keep rows the user has activity in at
+  // the very top regardless of the active sort direction.
+  const { key, dir } = state.poolSort;
+  const sign = dir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    const au = userHasActivity(a) ? 0 : 1;
+    const bu = userHasActivity(b) ? 0 : 1;
+    if (au !== bu) return au - bu;
+    const av = poolSortValue(a, key);
+    const bv = poolSortValue(b, key);
+    if (av < bv) return -1 * sign;
+    if (av > bv) return 1 * sign;
+    return (a.source || '').localeCompare(b.source || '') ||
+           (a.borrow?.symbol || '').localeCompare(b.borrow?.symbol || '') ||
+           (a.collateral?.symbol || '').localeCompare(b.collateral?.symbol || '');
+  });
+  // Update header arrows
+  $$('#pools th.sortable').forEach(th => {
+    const isActive = th.dataset.sort === key;
+    th.classList.toggle('sorted', isActive);
+    const arrow = th.querySelector('.arrow');
+    if (arrow) arrow.textContent = isActive ? (dir === 'asc' ? '▲' : '▼') : '';
+  });
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">no matching pools</td></tr>';
+    return;
+  }
+  // Column count is now 9 (source, collateral, borrow, supplied$,
+  // available$, borrow apy, max ltv, min supply, actions) — no longer
+  // include borrowed$ or liq threshold to make room. The empty colspan
+  // above stays at 9 so the "no matching pools" row spans the full table.
+  for (const m of rows) {
+    const tr = document.createElement('tr');
+    tr.className = 'row';
+    const isMine = userHasActivity(m);
+    if (isMine) tr.classList.add('mine');
+    tr.dataset.source = m.source;
+    tr.dataset.poolId = m.poolId;
+    const tags = [];
+    if (isMine && marketHasUserSupply(m)) tags.push('<span class="mine-badge">supplied</span>');
+    if (isMine && marketHasUserBorrow(m)) tags.push('<span class="mine-badge">borrowed</span>');
+
+    // Borrow button: only when the user has valid collateral for this row.
+    const col = userCollateralForRow(m);
+    const actionCell = col
+      ? `<button class="mini lend" data-borrow-source="${escapeHtml(m.source)}" data-borrow-pool="${escapeHtml(m.poolId)}" title="Borrow ${escapeHtml(m.borrow?.symbol || '')} against your ${escapeHtml(col.symbol)}">Borrow</button>`
+      : '—';
+
+    const minSupplyCell = m.minSupply
+      ? `${fmtNum(m.minSupply)} ${escapeHtml(m.borrow?.symbol || '')}`
+      : '—';
+
+    tr.innerHTML = `
+      <td><span class="pill ${escapeHtml(m.source)}">${escapeHtml(m.source)}</span>${tags.join('')}</td>
+      <td>${escapeHtml(m.collateral?.symbol || '—')}</td>
+      <td>${escapeHtml(m.borrow?.symbol || '—')}</td>
+      <td class="num">${fmtMoney(m.totalSuppliedUsd)}</td>
+      <td class="num">${fmtMoney(m.availableLiquidityUsd)}</td>
+      <td class="num">${fmtPct(m.borrowApy)}</td>
+      <td class="num">${fmtPct(m.ltv)}</td>
+      <td class="num">${minSupplyCell}</td>
+      <td>${actionCell}</td>
+    `;
+    // Row click navigates to pair detail, EXCEPT when clicking the
+    // borrow button — that has its own handler and should not fall
+    // through.
+    tr.addEventListener('click', e => {
+      if (e.target.closest('button[data-borrow-source]')) return;
+      navigateToPair(m.source, m.poolId);
+    });
+    tbody.appendChild(tr);
+  }
+}
+
+// Delegated click handler for the Borrow buttons in the pool list.
+$('#pools tbody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-borrow-source]');
+  if (!btn) return;
+  e.stopPropagation();
+  const source = btn.dataset.borrowSource;
+  const poolId = btn.dataset.borrowPool;
+  const m = state.markets.find(x => x.source === source && x.poolId === poolId);
+  if (!m) return;
+  const col = userCollateralForRow(m);
+  if (!col) {
+    alert('No collateral for this row.');
+    return;
+  }
+  const maxBorrow = maxBorrowForRow(m, col);
+  openTxModal({
+    action: 'borrow',
+    source,
+    marketId: poolId,
+    prefillAmount: maxBorrow && maxBorrow > 0 ? Number(maxBorrow.toFixed(6)) : null,
+    prefillCollateral: Number(col.qty.toFixed(6)),
+    hintSuffix: `max ~${fmtNum(maxBorrow || 0, 2)} ${m.borrow?.symbol || ''} (80% of LTV) from your ${fmtNum(col.qty, 2)} ${col.symbol}`,
+  });
+});
+
+$('#filter-source').addEventListener('change', renderPools);
+$('#filter-symbol').addEventListener('input', renderPools);
+$('#filter-clear').addEventListener('click', () => {
+  $('#filter-source').value = '';
+  $('#filter-symbol').value = '';
+  renderPools();
+});
+
+// Click any pool table header to toggle sort. First click on a column sorts
+// descending (intuitive for "biggest first"); a second click flips it.
+$$('#pools th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (state.poolSort.key === key) {
+      state.poolSort.dir = state.poolSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      state.poolSort = { key, dir: 'desc' };
+    }
+    renderPools();
+  });
+});
+
+// =================== orders page ===================
+
+// Detect supply (lend) positions by scanning the user's wallet balances
+// against each market's receipt token (qToken / fToken). One supply per
+// (source, receiptUnit) — Liqwid fans out per collateral so the same
+// receipt asset appears on many rows; dedupe before emitting.
+function detectSupplyPositions() {
+  if (!state.balances || state.balances.size === 0) return [];
+  const supplies = [];
+  const seen = new Set();
+  for (const m of state.markets) {
+    const r = m.receiptAsset;
+    if (!r || (!r.policyId && !r.assetName)) continue;
+    const unit = (r.policyId || '') + (r.assetName || '');
+    const dedupKey = `${m.source}:${unit}`;
+    if (seen.has(dedupKey)) continue;
+    const bal = state.balances.get(unit);
+    if (!bal || !bal.qty) continue;
+    seen.add(dedupKey);
+    // Convert the receipt balance to the underlying amount if we have an
+    // exchange rate. The rate is "whole underlying per 1 whole receipt",
+    // and bal.qty is already in whole receipt units (Koios-decimal-scaled).
+    const rate = Number(m.supplyExchangeRate || 0);
+    const underlyingQty = rate > 0 ? bal.qty * rate : bal.qty;
+    const displayAsset = rate > 0
+      ? m.borrow                               // show underlying (ADA, SNEK, …)
+      : { symbol: r.symbol || m.borrow?.symbol || '?', policyId: r.policyId, assetName: r.assetName };
+    supplies.push({
+      source: m.source,
+      type: 'lend',
+      status: 'active',
+      asset: displayAsset,
+      amount: underlyingQty,
+      collateralAsset: rate > 0 ? { symbol: r.symbol || '' } : null,
+      collateralAmount: rate > 0 ? bal.qty : 0,
+      apy: m.supplyApy,
+      marketId: m.poolId,
+    });
+  }
+  return supplies;
+}
+
+async function fetchUserOrders(force = false) {
+  const refreshQ = force ? '&refresh=1' : '';
+  const calls = [];
+  if (state.walletPkh) {
+    calls.push(fetch(`/api/orders?source=liqwid&address=${encodeURIComponent(state.walletPkh)}&limit=100${refreshQ}`).then(r => r.json()).catch(e => ({ orders: [], sources: { liqwid: e.message } })));
+  }
+  if (state.walletAddr) {
+    calls.push(fetch(`/api/orders?source=surf&address=${encodeURIComponent(state.walletAddr)}&limit=100${refreshQ}`).then(r => r.json()).catch(e => ({ orders: [], sources: { surf: e.message } })));
+  }
+  const responses = await Promise.all(calls);
+  const orders = [];
+  const errs = {};
+  for (const r of responses) {
+    if (r.orders) orders.push(...r.orders);
+    Object.assign(errs, r.sources || {});
+  }
+  return { orders, errs };
+}
+
+let lastOrdersRefresh = 0;
+const ORDERS_COOLDOWN_MS = 10_000;
+
+async function renderOrders(force = false) {
+  $('#orders-error').textContent = '';
+  if (!state.walletPkh) {
+    $('#orders-empty-msg').style.display = 'block';
+    $('#orders-panel').style.display = 'none';
+    return;
+  }
+  $('#orders-empty-msg').style.display = 'none';
+  $('#orders-panel').style.display = 'block';
+
+  // Refresh wallet balances so supply detection is current.
+  if (state.walletAddr && (force || state.balances.size === 0)) {
+    await loadWalletBalance(force);
+  }
+  // Make sure markets are loaded so supply detection has receiptAsset data.
+  if (!state.markets.length) await loadMarkets();
+
+  const { orders: borrows, errs } = await fetchUserOrders(force);
+  const supplies = detectSupplyPositions();
+  // Filter out zero-size positions — these are fully closed or dust
+  // residuals that should not clutter the orders view.
+  const all = [...borrows, ...supplies].filter(o => Number(o.amount) >= 0.000001);
+
+  // Sort: lends first, then borrows; within each, source then asset
+  all.sort((a, b) => {
+    const ta = a.type === 'lend' ? 0 : 1;
+    const tb = b.type === 'lend' ? 0 : 1;
+    return ta - tb ||
+      (a.source || '').localeCompare(b.source || '') ||
+      (a.asset?.symbol || '').localeCompare(b.asset?.symbol || '');
+  });
+
+  const errLines = Object.entries(errs).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`);
+  if (errLines.length) $('#orders-error').textContent = errLines.join('  •  ');
+
+  const tbody = $('#orders tbody');
+  tbody.innerHTML = '';
+  if (!all.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">no active positions for this wallet</td></tr>';
+    return;
+  }
+  for (const o of all) {
+    const tr = document.createElement('tr');
+    const statusClass = o.status === 'active' ? 'active' : (o.status === 'closed' ? 'closed' : 'pending');
+    const typeLabel = o.type === 'lend' ? 'LEND' : (o.type === 'borrow' ? 'BORROW' : escapeHtml(o.type || '—').toUpperCase());
+    const typeClass = o.type === 'lend' ? 'lend' : (o.type === 'borrow' ? 'borrow' : 'other');
+
+    // Position size = underlying amount (for lends that's the converted ADA,
+    // for borrows that's the principal). Receipt column shows the qToken /
+    // fToken and its count so the on-chain identity stays visible.
+    const receiptText = (o.type === 'lend' && o.collateralAsset?.symbol)
+      ? `${escapeHtml(o.collateralAsset.symbol)} <span class="muted">(${fmtNum(o.collateralAmount)})</span>`
+      : (o.collateralAsset?.symbol ? `${escapeHtml(o.collateralAsset.symbol)} <span class="muted">${fmtNum(o.collateralAmount)}</span>` : '—');
+
+    // Repay: full amount only, no input. For pending batcher orders
+    // we call /api/tx/close kind=cancel instead — it returns the user's
+    // collateral since the borrow was never actually opened on chain.
+    const closeKind = o.status === 'pending' ? 'cancel' : 'repay';
+    const closeLabel = o.status === 'pending' ? 'Cancel' : 'Repay Full';
+    const actions = o.type === 'lend'
+      ? `<button class="mini lend" data-order-action="supply" data-source="${escapeHtml(o.source)}" data-market="${escapeHtml(o.marketId || '')}">Supply</button>
+         <button class="mini withdraw" data-order-action="withdraw" data-source="${escapeHtml(o.source)}" data-market="${escapeHtml(o.marketId || '')}">Withdraw</button>
+         <button class="mini withdraw" data-order-action="withdraw-full" data-source="${escapeHtml(o.source)}" data-market="${escapeHtml(o.marketId || '')}" data-amount="${Number(o.amount || 0)}" data-symbol="${escapeHtml(o.asset?.symbol || '')}" title="Withdraw the full position (${fmtNum(o.amount)} ${escapeHtml(o.asset?.symbol || '')})">Full</button>`
+      : (o.type === 'borrow'
+        ? (closeKind === 'cancel'
+          ? `<button class="mini withdraw"
+                     data-order-action="cancel"
+                     data-source="${escapeHtml(o.source)}"
+                     data-market="${escapeHtml(o.marketId || '')}"
+                     data-txhash="${escapeHtml(o.txHash || o.id || '')}"
+                     data-outidx="${Number(o.outputIndex || 0)}"
+                     data-amount="${Number(o.amount || 0)}"
+                     data-symbol="${escapeHtml(o.asset?.symbol || '')}"
+                     title="Cancel this pending borrow and return the collateral">Cancel</button>`
+          : (o.source === 'liqwid'
+            ? `<button class="mini withdraw"
+                       data-order-action="repay"
+                       data-redeem="false"
+                       data-source="${escapeHtml(o.source)}"
+                       data-market="${escapeHtml(o.marketId || '')}"
+                       data-txhash="${escapeHtml(o.txHash || o.id || '')}"
+                       data-outidx="${Number(o.outputIndex || 0)}"
+                       data-amount="${Number(o.amount || 0)}"
+                       data-symbol="${escapeHtml(o.asset?.symbol || '')}"
+                       title="Repay the full loan and keep your collateral supplied">Repay (keep)</button>
+               <button class="mini withdraw"
+                       data-order-action="repay"
+                       data-redeem="true"
+                       data-source="${escapeHtml(o.source)}"
+                       data-market="${escapeHtml(o.marketId || '')}"
+                       data-txhash="${escapeHtml(o.txHash || o.id || '')}"
+                       data-outidx="${Number(o.outputIndex || 0)}"
+                       data-amount="${Number(o.amount || 0)}"
+                       data-symbol="${escapeHtml(o.asset?.symbol || '')}"
+                       title="Repay the full loan and withdraw your collateral">Repay (redeem)</button>`
+            : `<button class="mini withdraw"
+                       data-order-action="repay"
+                       data-redeem="true"
+                       data-source="${escapeHtml(o.source)}"
+                       data-market="${escapeHtml(o.marketId || '')}"
+                       data-txhash="${escapeHtml(o.txHash || o.id || '')}"
+                       data-outidx="${Number(o.outputIndex || 0)}"
+                       data-amount="${Number(o.amount || 0)}"
+                       data-symbol="${escapeHtml(o.asset?.symbol || '')}"
+                       title="Repay the full outstanding amount">Repay Full</button>`))
+        : '—');
+
+    tr.innerHTML = `
+      <td><span class="pill ${escapeHtml(o.source)}">${escapeHtml(o.source)}</span></td>
+      <td><span class="pill type-${typeClass}">${typeLabel}</span></td>
+      <td><span class="pill status-${statusClass}">${escapeHtml(o.status || '—')}</span></td>
+      <td>${escapeHtml(o.asset?.symbol || '—')}</td>
+      <td class="num">${fmtNum(o.amount)}</td>
+      <td>${receiptText}</td>
+      <td class="num">${fmtPct(o.apy)}</td>
+      <td class="num">${fmtPct(o.ltv)}</td>
+      <td class="num">${o.healthFactor ? Number(o.healthFactor).toFixed(2) : '–'}</td>
+      <td>${actions}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// Delegated click handler for the Supply / Withdraw / Withdraw-Full /
+// Repay mini buttons. Opens the tx modal which calls the backend
+// builder, signs via CIP-30, and submits via the wallet.
+$('#orders tbody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-order-action]');
+  if (!btn) return;
+  e.stopPropagation();
+  const action = btn.dataset.orderAction;
+  const src = btn.dataset.source;
+  const mkt = btn.dataset.market;
+  if (action === 'withdraw-full') {
+    const amount = parseFloat(btn.dataset.amount || '0');
+    const sym = btn.dataset.symbol || '';
+    // Truncate to 6 decimals (floor) instead of rounding — rounding
+    // can overshoot by 1 smallest unit (e.g. 195.311697 vs real max
+    // 195.311696). The backend's full:true flag subtracts 1 raw unit
+    // as an additional safety buffer.
+    const truncated = amount > 0 ? Math.floor(amount * 1e6) / 1e6 : 0;
+    openTxModal({
+      action: 'withdraw',
+      source: src,
+      marketId: mkt,
+      prefillAmount: truncated > 0 ? truncated : null,
+      hintSuffix: amount > 0 ? `full position: ${fmtNum(amount)} ${sym}` : undefined,
+      full: true,
+    });
+    return;
+  }
+  if (action === 'repay' || action === 'cancel') {
+    // Full repay / cancel — no user-entered amount. Show a confirm
+    // dialog and go straight to /api/tx/close → sign → submit.
+    runCloseFlow({
+      kind: action,
+      source: src,
+      marketId: mkt,
+      txHash: btn.dataset.txhash || '',
+      outputIndex: Number(btn.dataset.outidx || '0'),
+      amount: Number(btn.dataset.amount || '0'),
+      symbol: btn.dataset.symbol || '',
+      redeemCollateral: btn.dataset.redeem !== 'false',
+    });
+    return;
+  }
+  openTxModal({ action, source: src, marketId: mkt });
+});
+
+// runCloseFlow handles full-repay and cancel-pending-order actions.
+// Since there's no user-entered amount, we skip the tx modal's input
+// form and show a simple confirm() dialog, then push straight through
+// build → sign → submit. Feedback goes to the top of the table as a
+// status line (the modal would be overkill for a two-field flow).
+async function runCloseFlow({ kind, source, marketId, txHash, outputIndex, amount, symbol, redeemCollateral = true }) {
+  if (!state.walletApi) {
+    alert('Connect a wallet first.');
+    return;
+  }
+  if (!txHash) {
+    alert('Missing txHash on the position — cannot close.');
+    return;
+  }
+  const verb = kind === 'cancel' ? 'Cancel pending order'
+    : redeemCollateral ? 'Repay in full (redeem collateral)' : 'Repay in full (keep collateral)';
+  const msg = `${verb}\n\nsource: ${source}\nposition: ${amount} ${symbol}\noutRef: ${txHash.slice(0, 20)}…#${outputIndex}\n\nProceed?`;
+  if (!confirm(msg)) return;
+
+  const statusEl = $('#orders-error');
+  const set = t => { statusEl.textContent = t; statusEl.style.color = 'var(--muted)'; };
+  const err = t => { statusEl.textContent = t; statusEl.style.color = 'var(--error)'; };
+
+  try {
+    // 1. collect wallet context (same as other tx flows)
+    set('collecting wallet context…');
+    let usedHex = await state.walletApi.getUsedAddresses();
+    if (!usedHex?.length) usedHex = await state.walletApi.getUnusedAddresses();
+    if (!usedHex?.length) throw new Error('wallet has no addresses');
+    const usedBech32 = usedHex.map(h => { try { return cardanoAddrFromCborHex(h); } catch { return null; } }).filter(Boolean);
+    const address = usedBech32[0] || state.walletAddr;
+
+    // Liqwid's modifyBorrow needs the full wallet context (changeAddress,
+    // otherAddresses, utxos) to build the repay tx. Surf infers these
+    // from the address so passing them along is harmless.
+    let changeHex = '';
+    try { changeHex = await state.walletApi.getChangeAddress(); }
+    catch (e) { console.warn('[close] getChangeAddress failed:', e); }
+    let utxos = [];
+    try { utxos = (await state.walletApi.getUtxos()) || []; }
+    catch (e) { console.warn('[close] getUtxos failed:', e); }
+    console.log(`[close] collected ${utxos.length} utxos, change=${!!changeHex}, used=${usedHex.length}`);
+
+    // Liqwid hard-fails on empty utxos — surface it before the backend
+    // roundtrip so the user sees what's wrong immediately. For Surf we
+    // don't strictly need them but passing them is harmless.
+    if (source === 'liqwid' && utxos.length === 0) {
+      throw new Error('wallet returned 0 utxos — Lace may be locked, on the wrong network, or the dApp permission was revoked. Reconnect and retry.');
+    }
+
+    let changeBech32 = '';
+    try { changeBech32 = changeHex ? cardanoAddrFromCborHex(changeHex) : ''; } catch {}
+
+    // 2. backend build — /api/tx/close
+    set(`building ${kind} tx…`);
+    const buildRes = await fetch('/api/tx/close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source, marketId, address,
+        txHash, outputIndex,
+        kind,
+        redeemCollateral,
+        wallet: localStorage.getItem('walletKey') || 'lace',
+        changeAddress: changeBech32 || address,
+        otherAddresses: usedBech32.slice(1),
+        utxos,
+        pkh: state.walletPkh || '',
+      }),
+    });
+    if (!buildRes.ok) {
+      const e = await buildRes.json().catch(() => ({}));
+      throw new Error(`build failed: ${e.error || buildRes.status}`);
+    }
+    const built = await buildRes.json();
+
+    // 3. sign via CIP-30
+    set('awaiting wallet signature…');
+    let witnessSetCbor;
+    try {
+      witnessSetCbor = await state.walletApi.signTx(built.cbor, true);
+    } catch (e) {
+      throw new Error(`signing rejected: ${describeCip30Error(e)}`);
+    }
+
+    // 4. submit via the source's remote submit endpoint
+    set('submitting…');
+    const subRes = await fetch('/api/tx/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source, cbor: built.cbor, witnessSet: witnessSetCbor,
+        address, wallet: localStorage.getItem('walletKey') || 'lace',
+      }),
+    });
+    if (!subRes.ok) {
+      const e = await subRes.json().catch(() => ({}));
+      throw new Error(`submit failed: ${e.error || subRes.status}`);
+    }
+    const { txHash: newHash } = await subRes.json();
+    set(`${kind} submitted: ${newHash || '(in flight)'}`);
+
+    // 5. refresh orders so the position disappears / flips to pending
+    setTimeout(() => renderOrders(true), 1500);
+  } catch (e) {
+    console.error('close flow failed:', e);
+    err(e.message || String(e));
+  }
+}
+
+// Wire pair-page action buttons too — they share the same flow.
+$$('button.action').forEach(btn => {
+  // Replace the old alert handler from earlier — find the matching pair on
+  // open and reuse its source/poolId.
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.action;
+    // Read the current pair from the location hash.
+    const { path } = parseHash();
+    if (!path.startsWith('/pair/')) {
+      alert('Open a pool first.');
+      return;
+    }
+    const rest = path.slice('/pair/'.length);
+    const [src, ...idParts] = rest.split('/');
+    const poolId = decodeURIComponent(idParts.join('/'));
+    if (action === 'long' || action === 'short') {
+      alert(`${action} is coming soon — leverage flow not wired yet.`);
+      return;
+    }
+    // Map pair-page action names to backend routes:
+    // "lend" → supply, "borrow" → borrow
+    const backendAction = action === 'lend' ? 'supply' : action;
+    openTxModal({ action: backendAction, source: src, marketId: poolId });
+  }, { once: false });
+});
+
+// =================== tx modal + CIP-30 sign + submit ===================
+
+let activeTx = null; // { action, source, marketId, row, col }
+
+function openTxModal({ action, source, marketId, prefillAmount, prefillCollateral, hintSuffix, full }) {
+  if (!state.walletApi) {
+    alert('Connect a wallet first.');
+    return;
+  }
+  const m = state.markets.find(x => x.source === source && x.poolId === marketId);
+  // Stash the market row + the user's available collateral so the
+  // borrow modal's input listeners can auto-sync amount ↔ collateral.
+  activeTx = {
+    action,
+    source,
+    marketId,
+    row: m,
+    col: action === 'borrow' && m ? userCollateralForRow(m) : null,
+    full: !!full,
+  };
+  if (action === 'borrow') {
+    console.log('[tx-modal] open borrow with row:', m && {
+      poolId: m.poolId,
+      borrow: m.borrow?.symbol,
+      borrowPrice: m.borrow?.priceUsd,
+      collateral: m.collateral?.symbol,
+      collateralPrice: m.collateral?.priceUsd,
+      ltv: m.ltv,
+    });
+  }
+  $('#tx-modal-title').textContent = `${action[0].toUpperCase() + action.slice(1)} via ${source}`;
+  let hint = `Pool: ${marketId}`;
+  if (action === 'supply' && m?.minSupply) {
+    hint += ` · min ${fmtNum(m.minSupply)} ${m.borrow?.symbol || ''}`;
+  }
+  if (hintSuffix) hint += ` · ${hintSuffix}`;
+  $('#tx-modal-hint').textContent = hint;
+  $('#tx-amount').value = prefillAmount != null ? String(prefillAmount) : '';
+  $('#tx-collateral').value = prefillCollateral != null ? String(prefillCollateral) : '';
+  $('#tx-collateral-row').style.display = action === 'borrow' ? 'block' : 'none';
+  $('#tx-status').textContent = '';
+  $('#tx-error').textContent = '';
+  $('#tx-cbor-preview').style.display = 'none';
+  $('#tx-cbor-preview').textContent = '';
+  $('#tx-build-btn').disabled = false;
+  $('#tx-modal').classList.add('open');
+  setTimeout(() => $('#tx-amount').focus(), 50);
+}
+
+function closeTxModal() {
+  $('#tx-modal').classList.remove('open');
+  activeTx = null;
+}
+
+$('#tx-cancel-btn').addEventListener('click', closeTxModal);
+
+// Bidirectional auto-calc on the borrow modal — when the user types one
+// of the two values, fill the other from the LTV + price ratio. A
+// suppress flag breaks the infinite loop that would otherwise fire when
+// we set the sibling input programmatically.
+let suppressTxSync = false;
+const txSyncEvt = (handler) => (e) => { if (!suppressTxSync) handler(e); };
+
+// Why this is so verbose: the auto-sync was silently failing in some
+// rows because m.collateral.priceUsd or m.borrow.priceUsd was 0/missing,
+// and there was no UI feedback. Now we tell the user exactly what
+// happened so they can pick a different row or report the issue.
+
+function explainAutoCalcFailure(m) {
+  if (!m) return 'no market row attached to this modal';
+  if (!m.borrow?.priceUsd) return `missing borrow asset price for ${m.borrow?.symbol || '?'}`;
+  if (!m.collateral?.priceUsd) return `missing collateral price for ${m.collateral?.symbol || '?'}`;
+  if (!Number(m.ltv)) return 'this market reports LTV = 0';
+  return null;
+}
+
+$('#tx-amount').addEventListener('input', txSyncEvt(() => {
+  console.log('[tx-modal] amount input', { action: activeTx?.action, value: $('#tx-amount').value, hasRow: !!activeTx?.row });
+  if (!activeTx || activeTx.action !== 'borrow' || !activeTx.row) return;
+  const v = parseFloat($('#tx-amount').value);
+  if (!Number.isFinite(v) || v <= 0) return;
+  const required = requiredCollateralForBorrow(activeTx.row, v);
+  if (required == null) {
+    const why = explainAutoCalcFailure(activeTx.row);
+    console.warn('[tx-modal] auto-calc failed:', why, activeTx.row);
+    $('#tx-error').textContent = `auto-calc unavailable — ${why}`;
+    return;
+  }
+  console.log('[tx-modal] borrow', v, '→ required collateral', required);
+  suppressTxSync = true;
+  $('#tx-collateral').value = required.toFixed(6);
+  suppressTxSync = false;
+  // Surface a soft warning if the required collateral exceeds what the
+  // user actually holds — the wallet will fail at sign time otherwise.
+  if (activeTx.col && required > activeTx.col.qty * 1.000001) {
+    $('#tx-error').textContent = `not enough collateral — needs ${fmtNum(required, 4)} ${activeTx.col.symbol}, you have ${fmtNum(activeTx.col.qty, 4)}`;
+  } else {
+    $('#tx-error').textContent = '';
+  }
+}));
+
+$('#tx-collateral').addEventListener('input', txSyncEvt(() => {
+  console.log('[tx-modal] collateral input', { action: activeTx?.action, value: $('#tx-collateral').value, hasRow: !!activeTx?.row });
+  if (!activeTx || activeTx.action !== 'borrow' || !activeTx.row) return;
+  const v = parseFloat($('#tx-collateral').value);
+  if (!Number.isFinite(v) || v <= 0) return;
+  const max = maxBorrowFromCollateralAmount(activeTx.row, v);
+  if (max == null) {
+    const why = explainAutoCalcFailure(activeTx.row);
+    console.warn('[tx-modal] auto-calc failed:', why, activeTx.row);
+    $('#tx-error').textContent = `auto-calc unavailable — ${why}`;
+    return;
+  }
+  console.log('[tx-modal] collateral', v, '→ max borrow', max);
+  suppressTxSync = true;
+  $('#tx-amount').value = max.toFixed(6);
+  suppressTxSync = false;
+  if (activeTx.col && v > activeTx.col.qty * 1.000001) {
+    $('#tx-error').textContent = `you only have ${fmtNum(activeTx.col.qty, 4)} ${activeTx.col.symbol}`;
+  } else {
+    $('#tx-error').textContent = '';
+  }
+}));
+
+$('#tx-build-btn').addEventListener('click', async () => {
+  if (!activeTx) return;
+  const amount = parseFloat($('#tx-amount').value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    $('#tx-error').textContent = 'enter a valid amount > 0';
+    return;
+  }
+  const collateralAmount = parseFloat($('#tx-collateral').value || '0');
+  $('#tx-error').textContent = '';
+  $('#tx-build-btn').disabled = true;
+
+  try {
+    // 1. Gather wallet context (CIP-30) — needed by Liqwid + Surf.
+    // Backend wants bech32 addresses (Blockfrost queries), so convert
+    // every CIP-30 CBOR-hex address to bech32 here.
+    $('#tx-status').textContent = 'collecting wallet context…';
+    let usedHex = await state.walletApi.getUsedAddresses();
+    if (!usedHex?.length) usedHex = await state.walletApi.getUnusedAddresses();
+    if (!usedHex?.length) throw new Error('wallet has no addresses');
+    let changeHex = '';
+    try { changeHex = await state.walletApi.getChangeAddress(); } catch {}
+    let utxos = [];
+    try { utxos = (await state.walletApi.getUtxos()) || []; } catch {}
+
+    const usedBech32 = usedHex.map(h => {
+      try { return cardanoAddrFromCborHex(h); } catch { return null; }
+    }).filter(Boolean);
+    let changeBech32 = '';
+    try { changeBech32 = changeHex ? cardanoAddrFromCborHex(changeHex) : ''; } catch {}
+
+    // 2. POST to backend tx builder
+    $('#tx-status').textContent = 'building transaction…';
+    const body = {
+      source: activeTx.source,
+      marketId: activeTx.marketId,
+      amount,
+      collateralAmount,
+      full: !!activeTx.full,
+      wallet: localStorage.getItem('walletKey') || 'lace',
+      address: usedBech32[0] || state.walletAddr || '',
+      changeAddress: changeBech32 || usedBech32[0] || state.walletAddr || '',
+      otherAddresses: usedBech32.slice(1),
+      utxos,
+    };
+    const r = await fetch(`/api/tx/${activeTx.action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${r.status}`);
+    }
+    const built = await r.json();
+    $('#tx-cbor-preview').textContent = built.cbor.slice(0, 200) + '…';
+    $('#tx-cbor-preview').style.display = 'block';
+
+    // 3. Sign via CIP-30 — partial=true so the wallet adds witnesses
+    $('#tx-status').textContent = 'awaiting wallet signature…';
+    let witnessSetCbor;
+    try {
+      witnessSetCbor = await state.walletApi.signTx(built.cbor, true);
+    } catch (e) {
+      throw new Error(`signing rejected: ${describeCip30Error(e)}`);
+    }
+
+    // 4. Submit via the protocol's own remote submit endpoint. Both
+    //    Liqwid and Surf take the unsigned cbor + witness set
+    //    separately and do the merge + broadcast on their server,
+    //    which avoids every client-side CBOR-merging hazard that kept
+    //    producing TxSendError from script_data_hash mismatches.
+    $('#tx-status').textContent = 'submitting via protocol…';
+    const submitRes = await fetch('/api/tx/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: activeTx.source,
+        cbor: built.cbor,
+        witnessSet: witnessSetCbor,
+        address: usedBech32[0] || state.walletAddr || '',
+        wallet: localStorage.getItem('walletKey') || 'lace',
+      }),
+    });
+    if (!submitRes.ok) {
+      const err = await submitRes.json().catch(() => ({}));
+      throw new Error('submit failed: ' + (err.error || submitRes.status));
+    }
+    const { txHash } = await submitRes.json();
+    $('#tx-status').textContent = `submitted: ${txHash}`;
+    $('#tx-error').textContent = '';
+    setTimeout(() => {
+      closeTxModal();
+      // refresh orders + balance after a successful submit
+      renderOrders(true);
+    }, 2500);
+  } catch (e) {
+    console.error('tx flow failed:', e);
+    $('#tx-error').textContent = e.message || String(e);
+    $('#tx-status').textContent = '';
+    $('#tx-build-btn').disabled = false;
+  }
+});
+
+// --- Minimal Cardano CBOR helper: combine an unsigned tx with a freshly
+// signed witness set. Cardano transactions are CBOR arrays [body,
+// witness_set, is_valid?, auxiliary_data?] — we walk the outer items
+// without decoding their internals, locate the witness_set slot, and
+// splice the new bytes in. Falls back gracefully on malformed input.
+
+function bytesToHex(bytes) {
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Walk one CBOR item starting at `pos` and return the position right after
+// it. Supports the subset of CBOR Cardano txs use.
+function cborSkip(bytes, pos) {
+  const ib = bytes[pos]; pos++;
+  const major = ib >> 5;
+  const minor = ib & 0x1f;
+  let length = 0;
+  if (minor < 24) length = minor;
+  else if (minor === 24) { length = bytes[pos]; pos += 1; }
+  else if (minor === 25) { length = (bytes[pos] << 8) | bytes[pos+1]; pos += 2; }
+  else if (minor === 26) { length = (bytes[pos]*0x1000000) + ((bytes[pos+1]<<16)|(bytes[pos+2]<<8)|bytes[pos+3]); pos += 4; }
+  else if (minor === 27) { // 8-byte length — Cardano rarely uses this
+    let n = 0;
+    for (let i = 0; i < 8; i++) n = n * 256 + bytes[pos+i];
+    length = n; pos += 8;
+  }
+  else if (minor === 31) {
+    // indefinite length: read items until break (0xff)
+    while (bytes[pos] !== 0xff) pos = cborSkip(bytes, pos);
+    return pos + 1;
+  }
+  switch (major) {
+    case 0: case 1: return pos; // uint / negative int
+    case 2: case 3: return pos + length; // bytestring / text
+    case 4: { // array
+      for (let i = 0; i < length; i++) pos = cborSkip(bytes, pos);
+      return pos;
+    }
+    case 5: { // map
+      for (let i = 0; i < 2 * length; i++) pos = cborSkip(bytes, pos);
+      return pos;
+    }
+    case 6: return cborSkip(bytes, pos); // tag
+    case 7: return pos; // simple/float (length already consumed for 25/26/27)
+  }
+  return pos;
+}
+
+// Replace element [1] (witness_set) of an outer CBOR array with newBytes.
+function combineCardanoTx(unsignedHex, witnessSetHex) {
+  const tx = hexToBytes(unsignedHex);
+  const ws = hexToBytes(witnessSetHex);
+  if (tx.length === 0) throw new Error('empty tx');
+  const head = tx[0];
+  const major = head >> 5;
+  if (major !== 4) throw new Error('tx is not a CBOR array (got major type ' + major + ')');
+  // Cardano txs are fixed-length 3 or 4 element arrays — header byte
+  // 0x83/0x84 directly encodes the length.
+  let pos = 1;
+  // skip body (item 0)
+  const wsStart = cborSkip(tx, pos);
+  // walk the existing witness set (item 1)
+  const wsEnd = cborSkip(tx, wsStart);
+
+  const out = new Uint8Array(tx.length - (wsEnd - wsStart) + ws.length);
+  out.set(tx.slice(0, wsStart), 0);
+  out.set(ws, wsStart);
+  out.set(tx.slice(wsEnd), wsStart + ws.length);
+  return bytesToHex(out);
+}
+
+// Refresh button — 10s cooldown so the user can't hammer Koios + the API.
+function startCooldown(btn, ms) {
+  btn.disabled = true;
+  const orig = btn.textContent;
+  let left = Math.ceil(ms / 1000);
+  btn.textContent = `Refresh (${left}s)`;
+  const t = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      clearInterval(t);
+      btn.disabled = false;
+      btn.textContent = orig;
+    } else {
+      btn.textContent = `Refresh (${left}s)`;
+    }
+  }, 1000);
+}
+
+$('#orders-refresh').addEventListener('click', async () => {
+  const now = Date.now();
+  if (now - lastOrdersRefresh < ORDERS_COOLDOWN_MS) return;
+  lastOrdersRefresh = now;
+  startCooldown($('#orders-refresh'), ORDERS_COOLDOWN_MS);
+  await loadMarkets();         // refresh markets cache too
+  await renderOrders(true);    // force balance reload
+});
+
+// =================== balance page ===================
+let lastBalanceRefresh = 0;
+const BALANCE_COOLDOWN_MS = 10_000;
+
+async function renderBalance(force = false) {
+  $('#balance-error').textContent = '';
+  if (!state.walletAddr) {
+    $('#balance-empty-msg').style.display = 'block';
+    $('#balance-content').style.display = 'none';
+    return;
+  }
+  $('#balance-empty-msg').style.display = 'none';
+
+  // Load lazily: if we don't have a snapshot yet (e.g. the user landed on
+  // #/balance first) or the user explicitly hit refresh, fetch now.
+  if (!state.balanceSnapshot || force) {
+    await loadWalletBalance(force);
+  }
+  const bal = state.balanceSnapshot;
+  if (!bal) {
+    $('#balance-error').textContent = 'could not load balance';
+    return;
+  }
+  $('#balance-content').style.display = 'block';
+
+  const addrEl = $('#balance-address');
+  addrEl.textContent = bal.address;
+  const ada = (bal.lovelace || 0) / 1e6;
+  $('#balance-ada').textContent = ada.toLocaleString(undefined, { maximumFractionDigits: 6 }) + ' ADA';
+  $('#balance-token-count').textContent = (bal.tokens || []).length;
+  $('#balance-fetched').textContent = bal.fetchedAt ? new Date(bal.fetchedAt).toLocaleTimeString() : '–';
+
+  const tbody = $('#balance-tokens tbody');
+  tbody.innerHTML = '';
+  const tokens = bal.tokens || [];
+  if (!tokens.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">no native tokens in this wallet</td></tr>';
+    return;
+  }
+  // Sort: bigger quantities first (approx — convert to scaled number for sort)
+  const scaled = tokens.map(t => {
+    const dec = Number(t.decimals || 0);
+    const raw = Number(t.quantity || 0);
+    return { t, qty: dec > 0 ? raw / Math.pow(10, dec) : raw };
+  });
+  scaled.sort((a, b) => b.qty - a.qty);
+  for (const { t, qty } of scaled) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(t.symbol || hexToAscii(t.assetName || '') || '—')}</td>
+      <td><code>${escapeHtml((t.policyId || '').slice(0, 14))}…</code></td>
+      <td class="num">${qty.toLocaleString(undefined, { maximumFractionDigits: 6 })}</td>
+      <td class="num">${t.decimals ?? 0}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+$('#balance-refresh').addEventListener('click', async () => {
+  const now = Date.now();
+  if (now - lastBalanceRefresh < BALANCE_COOLDOWN_MS) return;
+  lastBalanceRefresh = now;
+  startCooldown($('#balance-refresh'), BALANCE_COOLDOWN_MS);
+  await renderBalance(true);
+});
+
+// =================== pair page ===================
+function renderPair(source, poolId) {
+  $('#pair-error').textContent = '';
+  const m = state.markets.find(x => x.source === source && x.poolId === poolId);
+  if (!m) {
+    $('#pair-title').textContent = 'Pair not found';
+    $('#pool-stats').innerHTML = `<div class="empty">No market matches <code>${escapeHtml(source)}/${escapeHtml(poolId)}</code>. Try refreshing.</div>`;
+    $('#wallet-stats').innerHTML = '';
+    return;
+  }
+  const collSym = m.collateral?.symbol || '—';
+  const borrowSym = m.borrow?.symbol || '—';
+  $('#pair-title').textContent = `${collSym} → ${borrowSym}`;
+  $('#pool-stats').innerHTML = `
+    <div class="stat"><span class="label">Source</span><span class="value"><span class="pill ${escapeHtml(m.source)}">${escapeHtml(m.source)}</span></span></div>
+    <div class="stat"><span class="label">Pool ID</span><span class="value"><code>${escapeHtml(m.poolId)}</code></span></div>
+    <div class="stat"><span class="label">Collateral</span><span class="value">${escapeHtml(collSym)}</span></div>
+    <div class="stat"><span class="label">Borrow</span><span class="value">${escapeHtml(borrowSym)}</span></div>
+    <div class="stat"><span class="label">Total supplied</span><span class="value">${fmtMoney(m.totalSuppliedUsd)}</span></div>
+    <div class="stat"><span class="label">Total borrowed</span><span class="value">${fmtMoney(m.totalBorrowedUsd)}</span></div>
+    <div class="stat"><span class="label">Available liquidity</span><span class="value">${fmtMoney(m.availableLiquidityUsd)}</span></div>
+    <div class="stat"><span class="label">Supply APY</span><span class="value">${fmtPct(m.supplyApy)}</span></div>
+    <div class="stat"><span class="label">Borrow APY</span><span class="value">${fmtPct(m.borrowApy)}</span></div>
+    <div class="stat"><span class="label">Max LTV</span><span class="value">${fmtPct(m.ltv)}</span></div>
+    <div class="stat"><span class="label">Liquidation threshold</span><span class="value">${fmtPct(m.liquidationThreshold)}</span></div>
+  `;
+  renderWalletForPair(m);
+}
+
+function renderWalletForPair(m) {
+  const stats = $('#wallet-stats');
+  if (!state.walletPkh) {
+    stats.innerHTML = '<div class="muted">Connect Lace to see balances.</div>';
+    return;
+  }
+  const lookup = (asset) => {
+    if (!asset) return null;
+    const unit = (asset.policyId || '') + (asset.assetName || '');
+    return state.balances.get(unit);
+  };
+  const collateralBal = lookup(m.collateral);
+  const borrowBal = lookup(m.borrow);
+  const lines = [];
+  lines.push(`<div class="stat"><span class="label">Address (pkh)</span><span class="value"><code>${escapeHtml(state.walletPkh.slice(0, 12))}…</code></span></div>`);
+  if (m.collateral?.symbol) {
+    lines.push(`<div class="balance-row"><span class="sym">${escapeHtml(m.collateral.symbol)} (collateral)</span><span>${collateralBal ? fmtNum(collateralBal.qty) : '–'}</span></div>`);
+  }
+  if (m.borrow?.symbol) {
+    lines.push(`<div class="balance-row"><span class="sym">${escapeHtml(m.borrow.symbol)} (borrow)</span><span>${borrowBal ? fmtNum(borrowBal.qty) : '–'}</span></div>`);
+  }
+  if (state.balances.size === 0) {
+    lines.push('<div class="muted" style="margin-top:0.5rem">No Koios balances loaded yet.</div>');
+  }
+  stats.innerHTML = lines.join('');
+}
+
+// =================== top search bar ===================
+const searchInput = $('#search');
+const searchResults = $('#search-results');
+function runSearch() {
+  const q = searchInput.value.trim().toLowerCase();
+  searchResults.innerHTML = '';
+  if (!q) { searchResults.classList.remove('open'); return; }
+  const matches = state.markets.filter(m => {
+    const b = m.borrow || {};
+    const c = m.collateral || {};
+    return (b.symbol || '').toLowerCase().includes(q) ||
+           (c.symbol || '').toLowerCase().includes(q) ||
+           (b.policyId || '').toLowerCase() === q ||
+           (c.policyId || '').toLowerCase() === q ||
+           ((b.policyId || '') + (b.assetName || '')).toLowerCase() === q ||
+           ((c.policyId || '') + (c.assetName || '')).toLowerCase() === q;
+  }).slice(0, 12);
+  if (!matches.length) {
+    searchResults.innerHTML = '<div class="search-result"><span class="muted">no matches</span></div>';
+    searchResults.classList.add('open');
+    return;
+  }
+  for (const m of matches) {
+    const div = document.createElement('div');
+    div.className = 'search-result';
+    div.innerHTML = `
+      <span>${escapeHtml(m.collateral?.symbol || '—')} → ${escapeHtml(m.borrow?.symbol || '—')}</span>
+      <span class="pill ${escapeHtml(m.source)}">${escapeHtml(m.source)}</span>
+    `;
+    div.addEventListener('mousedown', e => {
+      e.preventDefault();
+      navigateToPair(m.source, m.poolId);
+      searchResults.classList.remove('open');
+      searchInput.value = '';
+    });
+    searchResults.appendChild(div);
+  }
+  searchResults.classList.add('open');
+}
+searchInput.addEventListener('input', runSearch);
+searchInput.addEventListener('focus', runSearch);
+searchInput.addEventListener('blur', () => setTimeout(() => searchResults.classList.remove('open'), 150));
+
+function navigateToPair(source, poolId) {
+  location.hash = `#/pair/${encodeURIComponent(source)}/${encodeURIComponent(poolId)}`;
+}
+
+// =================== boot ===================
+$('#connect').addEventListener('click', connectLace);
+$('#disconnect').addEventListener('click', disconnectWallet);
+
+(async function boot() {
+  // Visible version marker so we can confirm in the browser console
+  // that the latest bundle is loaded (surprisingly easy to miss with
+  // aggressive caching).
+  console.log('%cDH Leverage v2 — UI refresh',
+              'color:#3b82f6;font-weight:600');
+  await loadMarkets();
+  // Try to silently restore the wallet from a previous session.
+  await tryRestoreWallet();
+  route();
+  // Lightweight refresh loop so the pools page stays current.
+  setInterval(async () => {
+    await loadMarkets();
+    if (parseHash().path === '/pools' || parseHash().path === '') renderPools();
+  }, 60_000);
+})();
+</script>
+</body>
+</html>
