@@ -15,12 +15,14 @@ Create Simple frontend (not final frontend, just a showcase of function and test
 
 
 Manual TESTING
-LEND ADA						SURF	OK	LIQWID OK
-LEND SNEK						SURF	OK	LIQWID OK
-WITHDRAW ADA					SURF	OK	LIQWID OK
-WITHDRAW SNEK 				    SURF	OK	LIQWID OK
-BORROW ADA AGAINST SNEK		    SURF	OK	LIQWID OK
-BORROW SNEK AGAINST ADA		    SURF	OK	LIQWID OK
+| Action                     | Surf | Liqwid |
+|----------------------------|------|--------|
+| Lend ADA                   | OK   | OK     |
+| Lend SNEK                  | OK   | OK     |
+| Withdraw ADA               | OK   | OK     |
+| Withdraw SNEK              | OK   | OK     |
+| Borrow ADA against SNEK    | OK   | OK     |
+| Borrow SNEK against ADA    | OK   | OK     |
 
 To Test:
 ```
