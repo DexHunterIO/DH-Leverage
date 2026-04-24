@@ -23,10 +23,12 @@ BORROW ADA AGAINST SNEK		    SURF	OK	LIQWID OK
 BORROW SNEK AGAINST ADA		    SURF	OK	LIQWID OK
 
 To Test:
-```go run main.go api
 ```
-    Open Chrome and go to http://localhost:8080
-    There the simple integrations of lends and borrows can be tested. This is not the final UI, it is merely a way to test the fucntions and api calls.
+    go run main.go api
+```
+    
+Open Chrome and go to http://localhost:8080
+There the simple integrations of lends and borrows can be tested. This is not the final UI, it is merely a way to test the fucntions and api calls.
     
 
 ## Milestone 3
