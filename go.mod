@@ -3,7 +3,7 @@ module dh-leverage
 go 1.24.0
 
 require (
-	github.com/Salvionied/apollo v1.7.0
+	github.com/Salvionied/apollo v1.1.2-0.20260619094448-0db02362d9bc
 	github.com/fxamacker/cbor/v2 v2.9.1
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/joho/godotenv v1.5.1
@@ -18,11 +18,13 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/maestro-org/go-sdk v1.2.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
@@ -33,6 +35,7 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect

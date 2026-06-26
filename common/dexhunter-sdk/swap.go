@@ -28,10 +28,11 @@ func (c *Client) ReverseEstimateSwap(ctx context.Context, req ReverseEstimateReq
 }
 
 // BuildSwap returns an unsigned swap transaction CBOR. Sign it with the
-// user's wallet and pass the witnesses to Sign().
+// user's wallet and pass the witnesses to Sign(). The DexHunter v3 endpoint
+// is /swap/build (POST /swap/swap returns 404).
 func (c *Client) BuildSwap(ctx context.Context, req SwapRequest) (*SwapResponse, error) {
 	var out SwapResponse
-	if err := c.do(ctx, http.MethodPost, c.base, "/swap/swap", req, &out); err != nil {
+	if err := c.do(ctx, http.MethodPost, c.base, "/swap/build", req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

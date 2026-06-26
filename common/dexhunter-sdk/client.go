@@ -3,7 +3,7 @@
 // DexHunter is a Cardano DEX aggregator. We use it to execute the swap
 // leg of every leveraged trade: once a lending source has fronted the
 // borrow, the engine quotes a route via /swap/estimate and executes it
-// via /swap/swap → /swap/sign.
+// via /swap/build → /swap/sign.
 //
 // The SDK is intentionally minimal — it wraps the public REST surface
 // described at https://dexhunter.gitbook.io/dexhunter-partners and does
@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -91,16 +92,19 @@ func (e *APIError) Error() string {
 // `body` (if non-nil) as JSON and decoding the response into `out` (if
 // non-nil). It always sets the partner header.
 func (c *Client) do(ctx context.Context, method, base, path string, body, out any) error {
+	url := base + path
+
 	var reqBody io.Reader
+	var buf []byte
 	if body != nil {
-		buf, err := json.Marshal(body)
+		var err error
+		buf, err = json.Marshal(body)
 		if err != nil {
 			return fmt.Errorf("marshal request: %w", err)
 		}
 		reqBody = bytes.NewReader(buf)
 	}
-
-	url := base + path
+	log.Printf("dexhunter: %s %s body=%s", method, url, string(buf))
 	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
 		return err
@@ -125,6 +129,7 @@ func (c *Client) do(ctx context.Context, method, base, path string, body, out an
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Printf("dexhunter: %s %s -> %d resp=%s", method, url, resp.StatusCode, string(respBody))
 		return &APIError{Status: resp.StatusCode, Body: string(respBody), URL: url}
 	}
 

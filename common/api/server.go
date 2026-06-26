@@ -27,7 +27,9 @@ import (
 	"sync"
 	"time"
 
+	"dh-leverage/common/engine"
 	"dh-leverage/common/sources"
+	"dh-leverage/common/strike"
 	"dh-leverage/common/wallet"
 	"dh-leverage/web"
 
@@ -39,17 +41,41 @@ import (
 )
 
 type Server struct {
-	addr   string
-	srcs   []sources.Source
-	wallet *wallet.Client
-	app    *fiber.App
+	addr          string
+	srcs          []sources.Source
+	wallet        *wallet.Client
+	engine        *engine.Engine
+	strike        *strike.Client
+	strikeStore   *strike.Store
+	strikeHistory strike.History
+	// engineDisabledReason explains why the leverage engine is nil (e.g. no
+	// durable store), surfaced verbatim in the /api/leverage/* 503 so the
+	// operator sees the real cause instead of a generic "not configured".
+	engineDisabledReason string
+	app                  *fiber.App
 }
 
-func New(addr string, w *wallet.Client, srcs ...sources.Source) *Server {
+// SetEngineDisabledReason records why the engine wasn't constructed, for the
+// 503 responses. Called by the binary at wiring time.
+func (s *Server) SetEngineDisabledReason(reason string) { s.engineDisabledReason = reason }
+
+// SetStrike wires the Strike Finance perpetuals client + per-user credential
+// store. Called at startup.
+func (s *Server) SetStrike(c *strike.Client, store *strike.Store) {
+	s.strike = c
+	s.strikeStore = store
+}
+
+// SetStrikeHistory wires the deposit/withdrawal history store. Optional — if not
+// set, the history routes degrade to an in-memory store.
+func (s *Server) SetStrikeHistory(h strike.History) { s.strikeHistory = h }
+
+func New(addr string, w *wallet.Client, eng *engine.Engine, srcs ...sources.Source) *Server {
 	s := &Server{
 		addr:   addr,
 		srcs:   srcs,
 		wallet: w,
+		engine: eng,
 		app: fiber.New(fiber.Config{
 			AppName:               "dh-leverage",
 			DisableStartupMessage: true,
@@ -89,6 +115,45 @@ func (s *Server) routes() {
 	// (Liqwid GraphQL submitTransaction; Surf /api/wallet/assemble +
 	// /api/wallet/submit). Avoids client-side witness merging entirely.
 	api.Post("/tx/submit", s.handleTxSubmit)
+	// Generic raw submit: posts an already-signed tx CBOR straight to the
+	// chain. Used by the leverage flow to broadcast the user-signed funding
+	// tx (which isn't tied to any one source).
+	api.Post("/tx/submit-raw", s.handleTxSubmitRaw)
+
+	// Leverage engine — server-driven long/short looping (trade -> wait for
+	// batch -> lend against -> trade again) up to 1.8x, via a backend-held
+	// temp address. The user only signs the funding tx.
+	api.Post("/leverage/quote", s.handleLeverageQuote)
+	api.Post("/leverage/open", s.handleLeverageOpen)
+	api.Post("/leverage/start", s.handleLeverageStart)
+	api.Post("/leverage/reverse", s.handleLeverageReverse)
+	api.Post("/leverage/sweep", s.handleLeverageSweep)
+	api.Post("/leverage/retry", s.handleLeverageRetry)
+	api.Get("/leverage/status/:id", s.handleLeverageStatus)
+	api.Get("/leverage/jobs", s.handleLeverageJobs)
+
+	// Strike Finance v2 perpetuals (api.strikefinance.org), builder-codes model.
+	// connect/* onboards a user (challenge → wallet signs → verify → per-user API
+	// wallet); positions/account are public reads; leverage/order/deposit act as
+	// the connected user and carry the builder fee.
+	api.Get("/strike/status", s.handleStrikeStatus)
+	api.Get("/strike/markets", s.handleStrikeMarkets)
+	api.Get("/strike/positions", s.handleStrikePositions)
+	api.Get("/strike/account", s.handleStrikeAccount)
+	api.Get("/strike/balances", s.handleStrikeBalances)
+	api.Post("/strike/connect/challenge", s.handleStrikeConnectChallenge)
+	api.Post("/strike/connect/verify", s.handleStrikeConnectVerify)
+	api.Post("/strike/leverage", s.handleStrikeLeverage)
+	api.Post("/strike/order", s.handleStrikeOrder)
+	api.Post("/strike/order/cancel", s.handleStrikeOrderCancel)
+	api.Post("/strike/deposit/quote", s.handleStrikeDepositQuote)
+	api.Post("/strike/deposit/build", s.handleStrikeDepositBuild)
+	api.Post("/strike/deposit/confirm", s.handleStrikeDepositConfirm)
+	api.Post("/strike/withdraw/quote", s.handleStrikeWithdrawQuote)
+	api.Post("/strike/withdraw/confirm", s.handleStrikeWithdrawConfirm)
+	api.Post("/strike/withdraw/batcher", s.handleStrikeWithdrawBatcher)
+	api.Post("/strike/withdraw/settle", s.handleStrikeWithdrawSettle)
+	api.Get("/strike/history", s.handleStrikeHistory)
 
 	// Embedded frontend at /
 	s.app.Get("/", s.handleIndex)
@@ -286,6 +351,39 @@ func (s *Server) handleTxFinalize(c *fiber.Ctx) error {
 	}
 	fmt.Println("FINAL CBORHEX", hex.EncodeToString(cborHex))
 	return c.JSON(fiber.Map{"cbor": cborHex})
+}
+
+// handleTxSubmitRaw broadcasts an already-signed transaction CBOR straight to
+// the chain (via the engine's Koios submit). Used for the leverage funding tx,
+// which the user signs in their wallet and which isn't tied to a source.
+func (s *Server) handleTxSubmitRaw(c *fiber.Ctx) error {
+	if s.engine == nil {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "engine not configured"})
+	}
+	var body struct {
+		CBOR       string `json:"cbor"`
+		WitnessSet string `json:"witnessSet"` // optional: merge before submit
+	}
+	if err := c.BodyParser(&body); err != nil || body.CBOR == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cbor required"})
+	}
+	signed := body.CBOR
+	if body.WitnessSet != "" {
+		merged, err := sources.MergeTxWitnesses(body.CBOR, body.WitnessSet)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "merge witnesses: " + err.Error()})
+		}
+		signed = merged
+	}
+	ctx, cancel := context.WithTimeout(c.UserContext(), 30*time.Second)
+	defer cancel()
+	hash, err := s.engine.SubmitRaw(ctx, signed)
+	if err != nil {
+		log.Printf("api: raw submit failed: %v", err)
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
+	}
+	log.Printf("api: raw submit ok, txHash=%s (e.g. funding tx — now confirming)", hash)
+	return c.JSON(fiber.Map{"txHash": hash})
 }
 
 // handleTxClose builds a full-repay or cancel tx for the target

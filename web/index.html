@@ -266,6 +266,8 @@
     <div class="spacer"></div>
     <nav>
       <a href="#/pools" data-route="pools">Markets</a>
+      <a href="#/leverage" data-route="leverage">Leverage</a>
+      <a href="#/perps" data-route="perps">Perps</a>
       <a href="#/orders" data-route="orders">Positions</a>
       <a href="#/balance" data-route="balance">Wallet</a>
     </nav>
@@ -342,6 +344,158 @@
     </div>
   </section>
 
+  <!-- ===================== LEVERAGE PAGE ===================== -->
+  <section id="page-leverage" class="page">
+    <div class="page-header">
+      <h1>Leverage</h1>
+      <span class="muted">Long / short up to 1.8x — looped lend &amp; trade via a one-time funding signature.</span>
+    </div>
+    <div id="leverage-error" class="error"></div>
+    <div style="display:flex; gap:1.25rem; flex-wrap:wrap; align-items:flex-start">
+      <!-- builder -->
+      <div class="panel" style="flex:1 1 360px; min-width:320px">
+        <h2 style="margin-top:0">Open a position</h2>
+        <div style="display:flex; gap:0.4rem; margin:0.6rem 0 1rem">
+          <button id="lev-long" class="action borrow" data-dir="long" style="flex:1">Long</button>
+          <button id="lev-short" class="action" data-dir="short" style="flex:1">Short</button>
+        </div>
+        <label class="muted" style="font-size:0.8rem">Target token</label>
+        <input id="lev-target" type="text" list="lev-target-list" autocomplete="off" placeholder="Search a token (e.g. SNEK)" style="width:100%; margin:0.25rem 0 0.9rem" />
+        <datalist id="lev-target-list"></datalist>
+        <label class="muted" style="font-size:0.8rem">Collateral (ADA) amount</label>
+        <input id="lev-amount" type="number" min="0" step="1" placeholder="1000" style="width:100%; margin:0.25rem 0 0.9rem" />
+        <label class="muted" style="font-size:0.8rem">Leverage: <span id="lev-lev-label">1.50x</span></label>
+        <input id="lev-lev" type="range" min="1" max="1.8" step="0.05" value="1.5" style="width:100%; margin:0.4rem 0 1rem" />
+        <div style="display:flex; gap:0.4rem">
+          <button id="lev-quote" class="primary" style="flex:1">Quote</button>
+          <button id="lev-open" class="action borrow" style="flex:1" disabled>Open Position</button>
+        </div>
+        <div id="lev-status" class="muted" style="margin-top:0.85rem; font-size:0.82rem"></div>
+      </div>
+      <!-- quote preview -->
+      <div class="panel" style="flex:1 1 320px; min-width:300px">
+        <h2 style="margin-top:0">Quote</h2>
+        <div id="lev-quote-body" class="muted">Enter parameters and press Quote.</div>
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top:1.75rem">
+      <h2 style="margin:0">My leverage positions</h2>
+      <button id="lev-refresh" class="primary">Refresh</button>
+    </div>
+    <div class="muted" id="lev-jobs-empty">Connect your wallet to view positions.</div>
+    <div class="panel" style="padding:0; overflow-x:auto; display:none" id="lev-jobs-panel">
+      <table id="lev-jobs">
+        <thead>
+          <tr>
+            <th>Side</th>
+            <th>Target</th>
+            <th class="num">Capital</th>
+            <th class="num">Leverage</th>
+            <th>Status</th>
+            <th class="num">Steps</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== PERPS (STRIKE v2) PAGE ===================== -->
+  <section id="page-perps" class="page">
+    <div class="page-header">
+      <h1>Perps</h1>
+      <span class="muted">Perpetuals on <a href="https://app.strikefinance.org" target="_blank" rel="noopener">Strike Finance</a> (v2) — connect, deposit, then trade. A builder fee applies on fills.</span>
+    </div>
+    <div id="perps-error" class="error"></div>
+
+    <!-- Connect + balance -->
+    <div class="panel" style="margin-bottom:1rem">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap">
+        <div>
+          <strong>Strike connection</strong>
+          <div class="muted" id="perp-conn-status" style="font-size:0.82rem">Connect your wallet, then connect to Strike.</div>
+        </div>
+        <button id="perp-connect" class="action borrow">Connect to Strike</button>
+      </div>
+      <div id="perp-balance" style="margin-top:0.85rem; padding-top:0.8rem; border-top:1px solid var(--border); gap:1.75rem; flex-wrap:wrap; font-size:0.85rem; display:none"></div>
+    </div>
+
+    <div style="display:flex; gap:1.25rem; flex-wrap:wrap; align-items:flex-start">
+      <!-- Deposit + Withdraw -->
+      <div class="panel" style="flex:1 1 280px; min-width:260px">
+        <h2 style="margin-top:0">Deposit ADA</h2>
+        <div class="muted" style="font-size:0.8rem; margin-bottom:0.6rem">Fund your Strike account (one signed tx to Strike's vault).</div>
+        <label class="muted" style="font-size:0.8rem">Amount (ADA)</label>
+        <input id="perp-deposit-ada" type="number" min="0" step="1" placeholder="100" style="width:100%; margin:0.25rem 0 0.9rem"/>
+        <button id="perp-deposit" class="action" style="width:100%">Deposit</button>
+        <div id="perp-deposit-status" class="muted" style="margin-top:0.6rem; font-size:0.8rem"></div>
+
+        <div style="border-top:1px solid var(--border); margin:1rem 0 0.9rem"></div>
+        <h2 style="margin:0 0 0.4rem">Withdraw</h2>
+        <div class="muted" style="font-size:0.8rem; margin-bottom:0.6rem">Withdraw USD value back to your wallet as ADA (signed, no tx fee from you).</div>
+        <label class="muted" style="font-size:0.8rem">Amount (USD)</label>
+        <div style="display:flex; gap:0.4rem; margin:0.25rem 0 0.6rem">
+          <input id="perp-withdraw-usd" type="number" min="0" step="any" placeholder="0.00" style="flex:1"/>
+          <button id="perp-withdraw-max" class="mini" title="Withdraw your full available balance">Max</button>
+        </div>
+        <label class="muted" style="font-size:0.8rem">Settlement asset</label>
+        <select id="perp-withdraw-asset" style="width:100%; margin:0.25rem 0 0.9rem">
+          <option value="USDM">USDM</option>
+          <option value="USDC">USDC</option>
+          <option value="ADA">ADA</option>
+        </select>
+        <button id="perp-withdraw" class="action" style="width:100%">Withdraw</button>
+        <div id="perp-withdraw-status" class="muted" style="margin-top:0.6rem; font-size:0.8rem"></div>
+      </div>
+
+      <!-- Trade -->
+      <div class="panel" style="flex:1 1 360px; min-width:320px">
+        <h2 style="margin-top:0">Trade</h2>
+        <label class="muted" style="font-size:0.8rem">Market</label>
+        <select id="perp-symbol" style="width:100%; margin:0.25rem 0 0.9rem"></select>
+        <label class="muted" style="font-size:0.8rem">Leverage: <span id="perp-lev-label">5x</span></label>
+        <div style="display:flex; gap:0.5rem; align-items:center; margin:0.4rem 0 0.9rem">
+          <input id="perp-lev" type="range" min="1" max="50" step="1" value="5" style="flex:1"/>
+          <button id="perp-set-lev" class="mini">Set</button>
+        </div>
+        <label class="muted" style="font-size:0.8rem">Size (base asset)</label>
+        <input id="perp-size" type="number" min="0" step="any" placeholder="100" style="width:100%; margin:0.25rem 0 0.25rem"/>
+        <div id="perp-size-hint" class="muted" style="font-size:0.74rem; margin-bottom:0.85rem"></div>
+        <div style="display:flex; gap:0.5rem">
+          <button id="perp-long" class="action borrow" style="flex:1">Long (buy)</button>
+          <button id="perp-short" class="action" style="flex:1">Short (sell)</button>
+        </div>
+        <div id="perp-status" class="muted" style="margin-top:0.85rem; font-size:0.82rem"></div>
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top:1.75rem">
+      <h2 style="margin:0">My perp positions</h2>
+      <button id="perp-refresh" class="primary">Refresh</button>
+    </div>
+    <div class="muted" id="perp-pos-empty">Connect your wallet to view positions.</div>
+    <div class="panel" style="padding:0; overflow-x:auto; display:none" id="perp-pos-panel">
+      <table id="perp-pos">
+        <thead><tr><th>Side</th><th>Symbol</th><th class="num">Size</th><th class="num">Entry</th><th class="num">Lev</th><th class="num">uPnL</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="page-header" style="margin-top:1.75rem">
+      <h2 style="margin:0">Deposit / withdrawal history</h2>
+      <button id="perp-hist-refresh" class="primary">Refresh</button>
+    </div>
+    <div class="muted" id="perp-hist-empty">No deposits or withdrawals yet.</div>
+    <div class="panel" style="padding:0; overflow-x:auto; display:none" id="perp-hist-panel">
+      <table id="perp-hist">
+        <thead><tr><th>Time</th><th>Type</th><th>Asset</th><th class="num">Amount</th><th class="num">USD</th><th>Status</th><th>Tx</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ===================== BALANCE PAGE ===================== -->
   <section id="page-balance" class="page">
     <div class="page-header">
@@ -408,6 +562,17 @@
       <div class="muted">Select a Cardano wallet. Midnight wallets are not supported.</div>
       <div id="wallet-list" class="wallet-list"></div>
       <button class="modal-close" id="wallet-modal-close">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===================== LEVERAGE POSITION MODAL ===================== -->
+  <div id="lev-modal" class="modal-backdrop">
+    <div class="modal" style="max-width:640px">
+      <h3 id="lev-modal-title">Position</h3>
+      <div id="lev-modal-meta" style="font-size:0.82rem; line-height:1.6"></div>
+      <div style="font-weight:600; margin:0.9rem 0 0.4rem; font-size:0.85rem">Steps</div>
+      <div id="lev-modal-steps" style="max-height:46vh; overflow-y:auto"></div>
+      <button class="modal-close" id="lev-modal-close">Close</button>
     </div>
   </div>
 
@@ -772,6 +937,11 @@ async function enableWallet(w) {
     return;
   }
   const hex = used[0];
+  // CIP-30 signData wants the RAW address-bytes hex (what Strike verifies the
+  // COSE signature against), NOT the CBOR-wrapped hex getUsedAddresses returns.
+  // Strip the CBOR bytestring header, matching the reference's cardanoAddressToHex.
+  try { state.walletAddrHex = bytesToHex(cardanoBytesFromCborHex(hex)); }
+  catch { state.walletAddrHex = hex; }
   try {
     state.walletPkh = pkhFromCborHex(hex);
     state.walletAddr = cardanoAddrFromCborHex(hex);
@@ -883,6 +1053,14 @@ function route() {
     const poolId = decodeURIComponent(idParts.join('/'));
     renderPair(source, poolId);
     $('#page-pair').classList.add('active');
+  } else if (path === '/leverage') {
+    renderLeverage();
+    $('#page-leverage').classList.add('active');
+    $$('nav a[data-route="leverage"]').forEach(a => a.classList.add('active'));
+  } else if (path === '/perps') {
+    renderPerps();
+    $('#page-perps').classList.add('active');
+    $$('nav a[data-route="perps"]').forEach(a => a.classList.add('active'));
   } else if (path === '/orders') {
     renderOrders();
     $('#page-orders').classList.add('active');
@@ -1525,8 +1703,10 @@ async function runCloseFlow({ kind, source, marketId, txHash, outputIndex, amoun
   }
 }
 
-// Wire pair-page action buttons too — they share the same flow.
-$$('button.action').forEach(btn => {
+// Wire pair-page action buttons too — they share the same flow. Scope to the
+// pair page so leverage-page buttons (which also use .action for styling)
+// don't trigger this "open a pool first" handler.
+$$('#page-pair button.action').forEach(btn => {
   // Replace the old alert handler from earlier — find the matching pair on
   // open and reuse its source/poolId.
   btn.addEventListener('click', () => {
@@ -2044,6 +2224,889 @@ searchInput.addEventListener('blur', () => setTimeout(() => searchResults.classL
 function navigateToPair(source, poolId) {
   location.hash = `#/pair/${encodeURIComponent(source)}/${encodeURIComponent(poolId)}`;
 }
+
+// =================== leverage page ===================
+const lev = {
+  dir: 'long',
+  quote: null,
+  currentJob: null,
+  poll: null,
+  jobsById: {},
+  modalPoll: null,
+};
+
+// Resolve a user-typed target into a canonical unit (policyId+assetNameHex,
+// "" for ADA). Accepts a ticker (matched against loaded markets) or a raw unit.
+function resolveUnit(input) {
+  const t = (input || '').trim();
+  if (!t || t.toLowerCase() === 'ada') return '';
+  // Already a unit? (hex, >= 56 chars)
+  if (/^[0-9a-fA-F]{56,}$/.test(t)) return t.toLowerCase();
+  // Match a ticker against either side of any market.
+  for (const m of state.markets) {
+    for (const a of [m.collateral, m.borrow]) {
+      if (a && a.symbol && a.symbol.toLowerCase() === t.toLowerCase() && a.policyId) {
+        return (a.policyId + (a.assetName || '')).toLowerCase();
+      }
+    }
+  }
+  return t; // pass through; backend will reject if invalid
+}
+
+function setLevDir(dir) {
+  lev.dir = dir;
+  $('#lev-long').classList.toggle('borrow', dir === 'long');
+  $('#lev-short').classList.toggle('borrow', dir === 'short');
+}
+
+function levStatus(msg, isErr) {
+  $('#lev-status').textContent = msg || '';
+  $('#leverage-error').textContent = isErr ? (msg || '') : '';
+}
+
+function buildLevRequest() {
+  return {
+    owner: state.walletAddr || '',
+    direction: lev.dir,
+    collateralUnit: '',                      // ADA collateral for this build
+    targetUnit: resolveUnit($('#lev-target').value),
+    amount: Number($('#lev-amount').value || 0),
+    leverage: Number($('#lev-lev').value || 1.5),
+  };
+}
+
+async function levQuote() {
+  const req = buildLevRequest();
+  if (!req.targetUnit) { levStatus('Enter a target token.', true); return; }
+  if (req.amount <= 0) { levStatus('Enter a collateral amount.', true); return; }
+  levStatus('quoting…');
+  try {
+    const r = await fetch('/api/leverage/quote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.status);
+    lev.quote = data;
+    renderLevQuote(data);
+    $('#lev-open').disabled = !state.walletApi;
+    levStatus(state.walletApi ? 'Ready to open.' : 'Connect your wallet to open.');
+  } catch (e) {
+    levStatus('quote failed: ' + (e.message || e), true);
+  }
+}
+
+function renderLevQuote(q) {
+  const p = q.plan || {};
+  const liq = Math.abs(q.liqMovePct || 0).toFixed(1);
+  const liqDir = (lev.dir === 'long') ? 'drop' : 'rise';
+  $('#lev-quote-body').innerHTML = `
+    <div class="stat"><span class="label">Achieved leverage</span><span class="value">${(p.achievedLeverage||0).toFixed(2)}x</span></div>
+    <div class="stat"><span class="label">Total exposure</span><span class="value">${(p.totalExposure||0).toLocaleString()} ADA</span></div>
+    <div class="stat"><span class="label">Total borrowed</span><span class="value">${(p.totalBorrowed||0).toLocaleString(undefined,{maximumFractionDigits:2})}</span></div>
+    <div class="stat"><span class="label">Borrow market</span><span class="value">${escapeHtml(q.borrowSource||'?')} · ${(q.borrowApy||0).toFixed(2)}% APR</span></div>
+    <div class="stat"><span class="label">Loops / txs</span><span class="value">${q.loops} / ~${q.txCount}</span></div>
+    <div class="stat"><span class="label">Liquidation</span><span class="value">~${liq}% ${liqDir}</span></div>
+    <div class="stat"><span class="label">Fee reserve</span><span class="value">~${(q.feeReserveAda||0).toFixed(0)} ADA</span></div>
+    <div class="stat"><span class="label">Wallet must hold</span><span class="value" style="font-weight:700">${(q.totalAdaNeeded||0).toLocaleString(undefined,{maximumFractionDigits:0})} ADA</span></div>
+    ${q.note ? `<div style="margin-top:0.6rem; font-size:0.78rem; color:var(--accent)">⚠ ${escapeHtml(q.note)}</div>` : ''}
+    <div class="muted" style="margin-top:0.6rem; font-size:0.78rem">Capital + ~${(q.feeReserveAda||0).toFixed(0)} ADA fee reserve (network + DEX batcher fees for every loop and the unwind). Per-leg LTV ${(p.legLtv*100||0).toFixed(0)}% (safety-buffered). Funds route through a temporary address you fund once.</div>
+  `;
+}
+
+async function levOpen() {
+  if (!state.walletApi || !state.walletAddr) { levStatus('Connect your wallet first.', true); return; }
+  const req = buildLevRequest();
+  if (!req.targetUnit || req.amount <= 0) { levStatus('Set target and amount.', true); return; }
+  $('#lev-open').disabled = true;
+  try {
+    // Collect the wallet's CIP-30 UTxOs + change address so the backend builds
+    // the funding tx from the whole wallet (not just the first address).
+    levStatus('collecting wallet context…');
+    let utxos = [];
+    try { utxos = (await state.walletApi.getUtxos()) || []; }
+    catch (e) { console.warn('[lev] getUtxos failed:', e); }
+    let changeAddress = '';
+    try {
+      const changeHex = await state.walletApi.getChangeAddress();
+      changeAddress = cardanoAddrFromCborHex(changeHex);
+    } catch (e) { console.warn('[lev] getChangeAddress failed:', e); }
+    if (!utxos.length) throw new Error('wallet returned 0 utxos — unlock the wallet, check the network, or reconnect.');
+    req.utxos = utxos;
+    req.changeAddress = changeAddress || state.walletAddr;
+
+    levStatus('creating position…');
+    const r = await fetch('/api/leverage/open', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+    const open = await r.json();
+    if (!r.ok) throw new Error(open.error || r.status);
+    lev.currentJob = open.jobId;
+
+    // Sign the one-time funding tx (user wallet -> temp address).
+    levStatus('awaiting wallet signature (funding)…');
+    let witnessSet;
+    try {
+      witnessSet = await state.walletApi.signTx(open.fundingCbor, true);
+    } catch (e) {
+      throw new Error('funding signature rejected: ' + describeCip30Error(e));
+    }
+
+    levStatus('submitting funding tx…');
+    const sub = await fetch('/api/tx/submit-raw', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cbor: open.fundingCbor, witnessSet }),
+    });
+    const subData = await sub.json();
+    if (!sub.ok) throw new Error('funding submit failed: ' + (subData.error || sub.status));
+    levStatus(`funded (${(subData.txHash||'').slice(0,12)}…). Waiting for confirmation before the engine starts…`);
+
+    // Poll start until the funding tx is visible at the temp address.
+    await levStartWhenFunded(open.jobId);
+  } catch (e) {
+    levStatus('open failed: ' + (e.message || e), true);
+    $('#lev-open').disabled = false;
+  }
+}
+
+async function levStartWhenFunded(jobId, attempt = 0) {
+  if (attempt > 40) { levStatus('Funding not yet confirmed — retry Start from the positions list.', true); return; }
+  const r = await fetch('/api/leverage/start', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobId }),
+  });
+  if (r.ok) {
+    levStatus('engine running — building the position. Track progress below.');
+    levTrack(jobId);
+    loadLevJobs();
+    return;
+  }
+  // Not funded yet; back off and retry.
+  setTimeout(() => levStartWhenFunded(jobId, attempt + 1), 15_000);
+}
+
+// Poll a single job's status and reflect it in the status line.
+function levTrack(jobId) {
+  clearInterval(lev.poll);
+  lev.poll = setInterval(async () => {
+    try {
+      const r = await fetch('/api/leverage/status/' + encodeURIComponent(jobId));
+      if (!r.ok) return;
+      const job = await r.json();
+      const last = (job.steps && job.steps.length) ? job.steps[job.steps.length - 1] : null;
+      levStatus(`[${job.status}] ${job.steps?.length || 0} steps${last ? ' — last: ' + last.kind : ''}`);
+      if (['open', 'reversed', 'failed'].includes(job.status)) {
+        clearInterval(lev.poll);
+        loadLevJobs();
+      }
+    } catch {}
+  }, 8_000);
+}
+
+async function loadLevJobs() {
+  if (!state.walletAddr) {
+    $('#lev-jobs-empty').style.display = '';
+    $('#lev-jobs-panel').style.display = 'none';
+    return;
+  }
+  try {
+    const r = await fetch('/api/leverage/jobs?address=' + encodeURIComponent(state.walletAddr));
+    const data = await r.json();
+    const jobs = (data.jobs || []);
+    const tbody = $('#lev-jobs tbody');
+    if (!jobs.length) {
+      $('#lev-jobs-empty').textContent = 'No leverage positions yet.';
+      $('#lev-jobs-empty').style.display = '';
+      $('#lev-jobs-panel').style.display = 'none';
+      return;
+    }
+    $('#lev-jobs-empty').style.display = 'none';
+    $('#lev-jobs-panel').style.display = '';
+    lev.jobsById = {};
+    tbody.innerHTML = jobs.map(j => {
+      lev.jobsById[j.id] = j;
+      const canReverse = ['running', 'open', 'failed', 'awaiting_funding'].includes(j.status);
+      const canRetry = j.status === 'failed';
+      // A reversed position is already unwound — only loose change can remain, so
+      // offer a sweep-only action (no sell/repay/cancel) instead of a full unwind.
+      const canSweep = j.status === 'reversed';
+      return `<tr class="row" data-job="${j.id}" style="cursor:pointer" title="Click for steps & status">
+        <td>${j.direction === 'short' ? '🔻 Short' : '🔼 Long'}</td>
+        <td><code>${escapeHtml(short(j.targetUnit))}</code></td>
+        <td class="num">${(j.initialAmount||0).toLocaleString()}</td>
+        <td class="num">${(j.leverage||0).toFixed(2)}x</td>
+        <td>${statusBadge(j.status)}${j.healthFactor ? ` <span style="color:${healthColor(j.healthFactor)};font-size:0.75rem" title="health factor">· HF ${j.healthFactor.toFixed(2)}</span>` : ''}</td>
+        <td class="num">${j.steps?.length || 0}</td>
+        <td style="white-space:nowrap">
+          ${canRetry ? `<button class="action" data-retry="${j.id}" style="margin-right:0.3rem">Retry</button>` : ''}
+          ${canReverse ? `<button class="action" data-reverse="${j.id}">Reverse</button>` : ''}
+          ${canSweep ? `<button class="action" data-sweep="${j.id}">Sweep</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('tr[data-job]').forEach(row => {
+      row.addEventListener('click', e => {
+        if (e.target.closest('button')) return; // let action buttons handle their own click
+        openLevModal(row.dataset.job);
+      });
+    });
+    tbody.querySelectorAll('button[data-reverse]').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); levReverse(b.dataset.reverse); });
+    });
+    tbody.querySelectorAll('button[data-sweep]').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); levSweep(b.dataset.sweep); });
+    });
+    tbody.querySelectorAll('button[data-retry]').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); levRetry(b.dataset.retry); });
+    });
+  } catch (e) {
+    $('#leverage-error').textContent = 'load positions failed: ' + (e.message || e);
+  }
+}
+
+function statusBadge(s) {
+  const color = ({
+    open: 'var(--success)', running: 'var(--accent)', awaiting_funding: 'var(--muted)',
+    reversing: 'var(--accent)', reversed: 'var(--muted)', failed: 'var(--error)',
+  })[s] || 'var(--text)';
+  return `<span style="color:${color}; font-weight:600">${escapeHtml(s)}</span>`;
+}
+
+function healthColor(h) {
+  if (h <= 1.05) return 'var(--error)';
+  if (h <= 1.3) return 'var(--accent)';
+  return 'var(--success)';
+}
+function fmtPrice(p) {
+  if (!p) return '—';
+  return p < 0.01 ? p.toPrecision(3) : p.toFixed(4);
+}
+
+// Open the position modal: fetch the freshest job snapshot, then render its
+// status, temp address, and full step timeline (each tx links to Cardanoscan).
+async function openLevModal(jobId) {
+  const modal = $('#lev-modal');
+  $('#lev-modal-title').textContent = 'Position ' + jobId.slice(0, 8) + '…';
+  $('#lev-modal-meta').innerHTML = '<span class="muted">loading…</span>';
+  $('#lev-modal-steps').innerHTML = '';
+  modal.classList.add('open');
+
+  let job = lev.jobsById[jobId];
+  try {
+    const r = await fetch('/api/leverage/status/' + encodeURIComponent(jobId));
+    if (r.ok) job = await r.json();
+  } catch {}
+  if (!job) { $('#lev-modal-meta').innerHTML = '<span class="error">Could not load position.</span>'; return; }
+
+  renderLevModal(job);
+  // Keep the modal live while the position is still building.
+  clearInterval(lev.modalPoll);
+  if (['running', 'reversing', 'awaiting_funding', 'open'].includes(job.status)) {
+    lev.modalPoll = setInterval(async () => {
+      if (!$('#lev-modal').classList.contains('open')) { clearInterval(lev.modalPoll); return; }
+      try {
+        const r = await fetch('/api/leverage/status/' + encodeURIComponent(jobId));
+        if (r.ok) renderLevModal(await r.json());
+      } catch {}
+    }, 8_000);
+  }
+}
+
+function renderLevModal(job) {
+  const side = job.direction === 'short' ? '🔻 Short' : '🔼 Long';
+  $('#lev-modal-title').textContent = `${side} · ${(job.leverage||0).toFixed(2)}x`;
+  const temp = job.tempAddress || '';
+  const scan = a => `https://cardanoscan.io/address/${encodeURIComponent(a)}`;
+  $('#lev-modal-meta').innerHTML = `
+    <div class="stat"><span class="label">Status</span><span class="value">${statusBadge(job.status)}</span></div>
+    <div class="stat"><span class="label">Target</span><span class="value"><code>${escapeHtml(short(job.targetUnit))}</code></span></div>
+    <div class="stat"><span class="label">Capital</span><span class="value">${(job.initialAmount||0).toLocaleString()} ADA</span></div>
+    ${job.exposure ? `<div class="stat"><span class="label">Exposure</span><span class="value">${(job.exposure||0).toLocaleString(undefined,{maximumFractionDigits:0})} ADA</span></div>` : ''}
+    ${job.healthFactor ? `<div class="stat"><span class="label">Health factor</span><span class="value" style="color:${healthColor(job.healthFactor)};font-weight:700">${job.healthFactor.toFixed(2)}${job.healthFactor<=1?' ⚠ liquidatable':''}</span></div>` : ''}
+    ${job.currentPrice ? `<div class="stat"><span class="label">Price (entry → now)</span><span class="value">${fmtPrice(job.entryPrice)} → ${fmtPrice(job.currentPrice)} ADA</span></div>` : ''}
+    ${typeof job.pnlPct === 'number' && job.pnlPct !== 0 ? `<div class="stat"><span class="label">P&L</span><span class="value" style="color:${job.pnlPct>=0?'var(--success)':'var(--error)'};font-weight:700">${job.pnlPct>=0?'+':''}${job.pnlPct.toFixed(1)}%</span></div>` : ''}
+    ${job.healthUpdatedAt ? `<div class="stat"><span class="label">Health updated</span><span class="value muted">${new Date(job.healthUpdatedAt).toLocaleTimeString()}</span></div>` : ''}
+    <div class="stat"><span class="label">Temp address</span><span class="value" style="word-break:break-all">${temp ? `<a href="${scan(temp)}" target="_blank" rel="noopener"><code>${escapeHtml(temp)}</code></a>` : '—'}</span></div>
+    ${job.error ? `<div class="stat"><span class="label">Error</span><span class="value error">${escapeHtml(job.error)}</span></div>` : ''}
+    ${['failed','running','open','awaiting_funding','reversed'].includes(job.status) ? `<div style="display:flex; gap:0.4rem; margin-top:0.7rem; flex-wrap:wrap">
+      ${job.status === 'failed' ? `<button class="action" id="lev-modal-retry">Retry</button>` : ''}
+      ${['running','open','failed','awaiting_funding'].includes(job.status) ? `<button class="action" id="lev-modal-reverse">Reverse</button>` : ''}
+      ${['open','failed','awaiting_funding','reversed'].includes(job.status) ? `<button class="action" id="lev-modal-sweep">Sweep remaining</button>` : ''}
+    </div>` : ''}
+  `;
+  const rb = $('#lev-modal-retry');
+  if (rb) rb.addEventListener('click', () => { closeLevModal(); levRetry(job.id); });
+  const vb = $('#lev-modal-reverse');
+  if (vb) vb.addEventListener('click', () => { closeLevModal(); levReverse(job.id); });
+  const sb = $('#lev-modal-sweep');
+  if (sb) sb.addEventListener('click', () => { closeLevModal(); levSweep(job.id); });
+  const steps = job.steps || [];
+  if (!steps.length) {
+    $('#lev-modal-steps').innerHTML = '<div class="muted">No steps recorded yet.</div>';
+    return;
+  }
+  $('#lev-modal-steps').innerHTML = steps.map((s, i) => {
+    const t = s.at ? new Date(s.at).toLocaleTimeString() : '';
+    const label = escapeHtml(s.kind || 'step') + (s.note ? ' — ' + escapeHtml(s.note) : '');
+    const link = s.url
+      ? `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" style="font-size:0.72rem">view on Cardanoscan ↗</a>`
+      : (s.txHash ? `<code style="font-size:0.7rem">${escapeHtml(short(s.txHash))}</code>` : '');
+    return `<div style="display:flex; gap:0.6rem; padding:0.4rem 0; border-bottom:1px solid var(--border)">
+      <span class="muted" style="min-width:1.4rem; text-align:right">${i + 1}</span>
+      <div style="flex:1">
+        <div style="font-size:0.82rem">${label}</div>
+        <div style="display:flex; gap:0.6rem; color:var(--muted); font-size:0.72rem">${t ? `<span>${t}</span>` : ''}${link}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function short(u) {
+  if (!u) return 'ADA';
+  return u.length > 16 ? u.slice(0, 8) + '…' + u.slice(-6) : u;
+}
+
+async function levSweep(jobId) {
+  if (!confirm('Sweep remaining funds back to your wallet?\n\nThe engine checks for open positions first: if any remain it unwinds them, otherwise it just sweeps the loose change (no selling or cancelling).')) return;
+  try {
+    const r = await fetch('/api/leverage/sweep', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.status);
+    levStatus('sweeping ' + jobId.slice(0, 8) + '…');
+    levTrack(jobId);
+    loadLevJobs();
+  } catch (e) {
+    $('#leverage-error').textContent = 'sweep failed: ' + (e.message || e);
+  }
+}
+
+async function levReverse(jobId) {
+  if (!confirm('Reverse this position? The engine will unwind and sweep funds back to your wallet.')) return;
+  try {
+    const r = await fetch('/api/leverage/reverse', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.status);
+    levStatus('reversing position ' + jobId.slice(0, 8) + '…');
+    levTrack(jobId);
+    loadLevJobs();
+  } catch (e) {
+    $('#leverage-error').textContent = 'reverse failed: ' + (e.message || e);
+  }
+}
+
+async function levRetry(jobId) {
+  try {
+    const r = await fetch('/api/leverage/retry', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.status);
+    levStatus('retrying position ' + jobId.slice(0, 8) + '… — resuming from on-chain state');
+    levTrack(jobId);
+    loadLevJobs();
+  } catch (e) {
+    $('#leverage-error').textContent = 'retry failed: ' + (e.message || e);
+  }
+}
+
+function renderLeverage() {
+  if (!state.markets.length) loadMarkets().then(populateLevTargets);
+  else populateLevTargets();
+  loadLevJobs();
+}
+
+// Fill the target-token search dropdown with the non-ADA tokens that have a
+// Surf market (the engine's borrowable/collateral targets).
+function populateLevTargets() {
+  const seen = new Set();
+  for (const m of (state.markets || [])) {
+    if (m.source !== 'surf') continue;
+    for (const a of [m.collateral, m.borrow]) {
+      if (a && a.symbol && a.policyId && a.symbol.toLowerCase() !== 'ada') seen.add(a.symbol);
+    }
+  }
+  const opts = [...seen].sort();
+  $('#lev-target-list').innerHTML = opts.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
+}
+
+// wire leverage controls (the elements exist statically in the page)
+$('#lev-long').addEventListener('click', () => setLevDir('long'));
+$('#lev-short').addEventListener('click', () => setLevDir('short'));
+$('#lev-lev').addEventListener('input', e => { $('#lev-lev-label').textContent = Number(e.target.value).toFixed(2) + 'x'; });
+$('#lev-quote').addEventListener('click', levQuote);
+$('#lev-open').addEventListener('click', levOpen);
+$('#lev-refresh').addEventListener('click', loadLevJobs);
+
+// Position modal close (button + backdrop click).
+function closeLevModal() { $('#lev-modal').classList.remove('open'); clearInterval(lev.modalPoll); }
+$('#lev-modal-close').addEventListener('click', closeLevModal);
+$('#lev-modal').addEventListener('click', e => { if (e.target.id === 'lev-modal') closeLevModal(); });
+
+// =================== perps (Strike v2, builder codes) ===================
+const perp = { positions: [], connected: false };
+
+function perpStatus(msg, isErr) {
+  $('#perp-status').textContent = msg || '';
+  $('#perps-error').textContent = isErr ? (msg || '') : '';
+}
+const strToHex = s => [...new TextEncoder().encode(s)].map(b => b.toString(16).padStart(2, '0')).join('');
+
+function renderPerps() { loadPerpMarkets(); refreshPerpStatus(); loadPerpPositions(); loadPerpHistory(); }
+
+// Deposit/withdrawal history. Locally recorded by the server (Strike's builder
+// API has no history endpoint) and listed newest-first.
+async function loadPerpHistory() {
+  const empty = $('#perp-hist-empty'), panel = $('#perp-hist-panel');
+  if (!state.walletAddr) { empty.style.display = ''; empty.textContent = 'Connect your wallet to view history.'; panel.style.display = 'none'; return; }
+  try {
+    const r = await fetch('/api/strike/history?address=' + encodeURIComponent(state.walletAddr));
+    const d = await r.json();
+    const entries = (d && d.entries) || [];
+    const tb = $('#perp-hist tbody');
+    if (!entries.length) { empty.style.display = ''; empty.textContent = 'No deposits or withdrawals yet.'; panel.style.display = 'none'; tb.innerHTML = ''; return; }
+    empty.style.display = 'none'; panel.style.display = '';
+    tb.innerHTML = entries.map(e => {
+      const t = e.createdAt ? new Date(e.createdAt).toLocaleString() : '';
+      const isDep = e.type === 'deposit';
+      const typeCol = `<span style="color:${isDep ? 'var(--success)' : 'var(--accent)'}">${isDep ? 'Deposit' : 'Withdraw'}</span>`;
+      const stCol = perpHistStatusBadge(e.status);
+      const tx = e.txHash ? `<a href="https://cardanoscan.io/transaction/${e.txHash}" target="_blank" rel="noopener">${e.txHash.slice(0, 10)}…</a>` : '—';
+      return `<tr><td>${t}</td><td>${typeCol}</td><td>${e.asset || ''}</td><td class="num">${e.amount || ''}</td><td class="num">${e.usdValue ? '$' + e.usdValue : ''}</td><td>${stCol}</td><td>${tx}</td></tr>`;
+    }).join('');
+  } catch (e) { empty.style.display = ''; empty.textContent = 'history load failed: ' + (e.message || e); panel.style.display = 'none'; }
+}
+
+function perpHistStatusBadge(st) {
+  const color = st === 'confirmed' || st === 'sent' ? 'var(--success)' : st === 'failed' ? 'var(--error)' : 'var(--muted)';
+  return `<span style="color:${color}">${st || ''}</span>`;
+}
+
+async function refreshPerpStatus() {
+  const el = $('#perp-conn-status');
+  if (!state.walletAddr) { el.textContent = 'Connect your wallet first.'; perp.connected = false; updatePerpControls(); renderPerpBalance(null); return; }
+  try {
+    const r = await fetch('/api/strike/status?address=' + encodeURIComponent(state.walletAddr));
+    const d = await r.json();
+    perp.connected = !!d.connected;
+    if (!d.builderEnabled) { el.innerHTML = '<span style="color:var(--error)">Strike trading disabled — no builder code configured on the server.</span>'; }
+    else if (d.connected) { el.innerHTML = `<span style="color:var(--success)">Connected to Strike.</span> Builder fee: ${d.feeBps} bps.`; }
+    else { el.textContent = `Not connected. Builder fee: ${d.feeBps} bps.`; }
+  } catch (e) { el.textContent = 'status check failed: ' + (e.message || e); }
+  updatePerpControls();
+  if (perp.connected) loadPerpBalances(); else renderPerpBalance(null);
+}
+
+function updatePerpControls() {
+  $('#perp-connect').textContent = perp.connected ? 'Reconnect' : 'Connect to Strike';
+  ['perp-deposit', 'perp-set-lev', 'perp-long', 'perp-short', 'perp-withdraw', 'perp-withdraw-max'].forEach(id => { $('#' + id).disabled = !perp.connected; });
+}
+
+// Populate the market dropdown from Strike's live markets (symbol like ADA-USD).
+async function loadPerpMarkets() {
+  const sel = $('#perp-symbol');
+  if (sel.dataset.loaded) return;
+  try {
+    const r = await fetch('/api/strike/markets');
+    const d = await r.json();
+    const m = d.markets || d;
+    const rows = Array.isArray(m) ? m : Object.values(m || {});
+    const trading = rows.filter(x => (x.status || 'trading') === 'trading');
+    if (!trading.length) return;
+    perp.markets = {};
+    sel.innerHTML = trading.map(x => {
+      perp.markets[x.symbol] = x;
+      const name = x.name ? ` — ${x.name}` : '';
+      return `<option value="${escapeHtml(x.symbol)}">${escapeHtml(x.symbol)}${escapeHtml(name)}</option>`;
+    }).join('');
+    sel.dataset.loaded = '1';
+    if (perp.markets['ADA-USD']) sel.value = 'ADA-USD';
+    applyPerpMarket();
+  } catch (e) { console.warn('[perps] markets load failed', e); }
+}
+
+// Apply the selected market's constraints: clamp leverage to its max, and set
+// the size input's min/step/max + a hint, per the market config (MARKET orders).
+function applyPerpMarket() {
+  const m = (perp.markets || {})[$('#perp-symbol').value];
+  if (!m) return;
+  const maxLev = Number((m.margin_tiers && m.margin_tiers[0] && m.margin_tiers[0].max_leverage) || m.default_leverage || 50);
+  const slider = $('#perp-lev');
+  slider.max = maxLev;
+  if (Number(slider.value) > maxLev) slider.value = maxLev;
+  $('#perp-lev-label').textContent = slider.value + 'x';
+
+  const minSize = Number(m.order_market_min_size || 0);
+  const step = Number(m.order_market_step_size || 0);
+  const maxSize = Number(m.order_market_max_size || 0);
+  const sz = $('#perp-size');
+  if (minSize) { sz.min = minSize; sz.placeholder = String(minSize); }
+  if (step) sz.step = step;
+  if (maxSize) sz.max = maxSize;
+  const px = Number(m.mark_price || m.last_price || 0);
+  const minNotional = Number(m.order_min_notional || 0);
+  const minBySize = minSize || 0;
+  const minByNotional = (minNotional && px) ? Math.ceil(minNotional / px) : 0;
+  const effMin = Math.max(minBySize, minByNotional);
+  $('#perp-size-hint').textContent =
+    `min ${effMin} ${m.base_asset} · step ${step || 1} · min notional $${minNotional}${px ? ` · mark $${px}` : ''} · max ${maxLev}x`;
+}
+
+// The account endpoint (public, by address) carries the balances in snake_case:
+// wallet_balance, available_balance, unrealized_pnl, margin_balance.
+async function loadPerpBalances() {
+  try {
+    const r = await fetch('/api/strike/account?address=' + encodeURIComponent(state.walletAddr));
+    const d = await r.json();
+    if (!d || d.error) { renderPerpBalance(null); return; }
+    perp.balance = d;
+    renderPerpBalance(d);
+  } catch (e) { renderPerpBalance(null); }
+}
+
+// Read a field by snake_case OR camelCase name.
+function bf(b, ...names) {
+  for (const n of names) if (b && b[n] != null) return b[n];
+  return null;
+}
+
+function renderPerpBalance(b) {
+  const el = $('#perp-balance');
+  if (!b) { el.style.display = 'none'; return; }
+  const num = v => { const n = Number(v); return isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : (v ?? '—'); };
+  const wallet = bf(b, 'wallet_balance', 'walletBalance');
+  const margin = bf(b, 'margin_balance', 'marginBalance');
+  const upnlV = bf(b, 'unrealized_pnl', 'unrealizedPnl');
+  const upnl = Number(upnlV || 0);
+  const avail = perpAvailableUsd(b);
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <div><span class="muted">Wallet balance</span><br><strong>$${num(wallet)}</strong></div>
+    <div><span class="muted">Margin balance</span><br><strong>$${num(margin)}</strong></div>
+    <div><span class="muted">Unrealized PnL</span><br><strong style="color:${upnl>=0?'var(--success)':'var(--error)'}">${upnl>=0?'+':''}$${num(upnlV)}</strong></div>
+    <div><span class="muted">Available</span><br><strong>$${num(avail)}</strong></div>`;
+}
+
+// "Free to withdraw" USD: available_balance if present, else margin − maint, else wallet.
+function perpAvailableUsd(b) {
+  if (b == null) return 0;
+  const av = bf(b, 'available_balance', 'availableBalance');
+  if (av != null) return Number(av);
+  const mb = Number(bf(b, 'margin_balance', 'marginBalance')), mm = Number(bf(b, 'maintenance_margin', 'maintMargin'));
+  if (isFinite(mb) && isFinite(mm)) return Math.max(0, mb - mm);
+  return Number(bf(b, 'wallet_balance', 'walletBalance') || 0);
+}
+
+// Withdraw: quote (USD) → sign message_to_sign via CIP-30 → confirm.
+async function perpWithdraw() {
+  if (!perp.connected) { perpStatus('Connect to Strike first.', true); return; }
+  const usd = Number($('#perp-withdraw-usd').value || 0);
+  if (usd <= 0) { $('#perp-withdraw-status').textContent = 'enter a USD amount'; return; }
+  const wstat = m => { $('#perp-withdraw-status').textContent = m || ''; };
+  $('#perp-withdraw').disabled = true;
+  try {
+    wstat('getting quote…');
+    const q = await (await fetch('/api/strike/withdraw/quote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, usdValue: String(usd), asset: $('#perp-withdraw-asset').value }),
+    })).json();
+    if (q.error) throw new Error(q.error);
+    const withdrawId = q.withdraw_id || q.withdrawId;
+    const msg = q.message_to_sign || q.messageToSign;
+    if (!withdrawId || !msg) throw new Error('incomplete quote response');
+    wstat(`fee $${q.fee || '?'} — sign the withdrawal in your wallet…`);
+    let sig;
+    // IMPORTANT: pass the RAW message_to_sign as the signData payload, NOT
+    // strToHex(msg). This wallet signs the payload bytes literally (it does not
+    // hex-decode), so hex-encoding double-encodes it and the COSE payload no longer
+    // matches Strike's raw message_to_sign → "wallet signature verification failed".
+    try { sig = await state.walletApi.signData(state.walletAddrHex, msg); }
+    catch (e) { throw new Error('signature rejected: ' + describeCip30Error(e)); }
+    // Withdraw wants wallet_signature as a STRINGIFIED JSON object
+    // {"signature":coseSign1Hex,"key":coseKeyHex} — confirmed from Strike's prod
+    // payload. (This DIFFERS from the connect flow, which uses "{sig}:{key}" joined
+    // by a colon. Same {signature,key} data, different serialization.)
+    const walletSignature = JSON.stringify({ signature: sig.signature, key: sig.key });
+    console.log('[perps] withdraw sign', {
+      addrHexForSignData: state.walletAddrHex, messageToSign: msg,
+      coseSign1HexLen: (sig.signature || '').length, keyHexLen: (sig.key || '').length,
+    });
+    wstat('confirming…');
+    const wAsset = $('#perp-withdraw-asset').value;
+    const cf = await (await fetch('/api/strike/withdraw/confirm', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, withdrawId, walletSignature, asset: wAsset, usdValue: String(usd) }),
+    })).json();
+    if (cf.error) throw new Error(cf.error);
+    loadPerpHistory(); // shows the pending withdrawal immediately
+
+    // Batcher step: build the on-chain settlement tx, sign it, submit it.
+    wstat('building settlement tx…');
+    const utxos = await state.walletApi.getUtxos();
+    const bt = await (await fetch('/api/strike/withdraw/batcher', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, utxos }),
+    })).json();
+    if (bt.error) throw new Error(bt.error);
+    const txCbor = bt.txData || bt.cbor || bt.tx;
+    if (!txCbor) throw new Error('no txData from batcher');
+    wstat('sign the settlement tx in your wallet…');
+    const witnessSet = await state.walletApi.signTx(txCbor, true);
+    wstat('submitting settlement…');
+    const sub = await (await fetch('/api/tx/submit-raw', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cbor: txCbor, witnessSet }),
+    })).json();
+    if (sub.error) throw new Error(sub.error);
+    // Attach the settlement tx hash to the recorded history entry.
+    fetch('/api/strike/withdraw/settle', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, withdrawId, txHash: sub.txHash, status: 'sent' }),
+    }).then(() => loadPerpHistory()).catch(() => {});
+    wstat(`withdrawal sent ✓ ${(sub.txHash || '').slice(0, 14)}…`);
+    setTimeout(loadPerpBalances, 2000);
+  } catch (e) {
+    wstat('withdraw failed: ' + (e.message || e));
+  } finally {
+    $('#perp-withdraw').disabled = false;
+  }
+}
+
+function perpMaxWithdraw() {
+  const avail = perpAvailableUsd(perp.balance);
+  $('#perp-withdraw-usd').value = avail > 0 ? Math.floor(avail * 100) / 100 : '';
+}
+
+// Builder connect: challenge → user signs message via CIP-30 signData → verify.
+async function perpConnect() {
+  if (!state.walletApi || !state.walletAddr) { perpStatus('Connect your wallet first.', true); return; }
+  $('#perp-connect').disabled = true;
+  try {
+    perpStatus('requesting Strike challenge…');
+    const r = await fetch('/api/strike/connect/challenge', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr }),
+    });
+    const ch = await r.json();
+    if (!r.ok) throw new Error(ch.error || r.status);
+    perpStatus('sign the Strike connection message in your wallet…');
+    let sig;
+    try {
+      sig = await state.walletApi.signData(state.walletAddrHex, strToHex(ch.messageToSign));
+    } catch (e) { throw new Error('signature rejected: ' + describeCip30Error(e)); }
+    const walletSignature = `${sig.signature}:${sig.key}`; // CIP-30 COSE pair
+    perpStatus('verifying…');
+    const v = await fetch('/api/strike/connect/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, nonce: ch.nonce, walletSignature }),
+    });
+    const vd = await v.json();
+    if (!v.ok) throw new Error(vd.error || v.status);
+    perpStatus('connected to Strike ✓');
+    await refreshPerpStatus();
+    loadPerpPositions();
+  } catch (e) {
+    perpStatus('connect failed: ' + (e.message || e), true);
+  } finally {
+    $('#perp-connect').disabled = false;
+  }
+}
+
+// Deposit ADA into the Strike account: quote → build-tx → sign+submit → confirm.
+async function perpDeposit() {
+  if (!perp.connected) { perpStatus('Connect to Strike first.', true); return; }
+  const ada = Number($('#perp-deposit-ada').value || 0);
+  if (ada <= 0) { $('#perp-deposit-status').textContent = 'enter an amount'; return; }
+  const lovelace = String(Math.round(ada * 1e6));
+  const dstat = m => { $('#perp-deposit-status').textContent = m || ''; };
+  $('#perp-deposit').disabled = true;
+  try {
+    dstat('getting quote…');
+    const q = await (await fetch('/api/strike/deposit/quote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, lovelace }),
+    })).json();
+    if (q.error) throw new Error(q.error);
+    const requestId = q.request_id || q.requestId;
+    if (!requestId) throw new Error('no request_id in quote');
+    dstat('building tx…');
+    const utxos = await state.walletApi.getUtxos();
+    const b = await (await fetch('/api/strike/deposit/build', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, requestId, userAddress: state.walletAddr, utxos }),
+    })).json();
+    if (b.error) throw new Error(b.error);
+    const cbor = b.unsigned_tx || b.cbor;
+    if (!cbor) throw new Error('no unsigned_tx in build response');
+    dstat('awaiting wallet signature…');
+    const witnessSet = await state.walletApi.signTx(cbor, true);
+    dstat('submitting…');
+    const sub = await (await fetch('/api/tx/submit-raw', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cbor, witnessSet }),
+    })).json();
+    if (sub.error) throw new Error(sub.error);
+    const txHash = sub.txHash;
+    dstat('confirming deposit…');
+    const usdValue = q.usd_value || q.usdValue || '';
+    const cd = await (await fetch('/api/strike/deposit/confirm', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, requestId, txHash, adaAmount: String(ada), usdValue: String(usdValue) }),
+    })).json();
+    if (cd.error) throw new Error(cd.error);
+    dstat(`deposit submitted: ${(txHash || '').slice(0, 14)}… (credits after confirmations)`);
+    loadPerpHistory();
+  } catch (e) {
+    dstat('deposit failed: ' + (e.message || e));
+  } finally {
+    $('#perp-deposit').disabled = false;
+  }
+}
+
+async function perpSetLeverage() {
+  if (!perp.connected) { perpStatus('Connect to Strike first.', true); return; }
+  const symbol = $('#perp-symbol').value.trim();
+  const leverage = Number($('#perp-lev').value || 0);
+  try {
+    perpStatus(`setting ${leverage}x leverage…`);
+    const r = await fetch('/api/strike/leverage', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, symbol, leverage }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.status);
+    perpStatus(`leverage set to ${leverage}x for ${symbol}`);
+  } catch (e) { perpStatus('set leverage failed: ' + (e.message || e), true); }
+}
+
+// Round a size DOWN to the market's step size, formatted to base precision.
+function roundToStep(size, step, prec) {
+  if (!(step > 0)) return Number(Number(size).toFixed(prec || 8));
+  const n = Math.round((size / step)) * step;
+  return Number(n.toFixed(prec || 8));
+}
+
+// Place a market order. position "Long"=buy / "Short"=sell. reduceOnly closes.
+// Enforces the market's min size / step size / min notional (for opens).
+async function perpOrder(position, { reduceOnly = false, size = null, symbol = null } = {}) {
+  if (!perp.connected) { perpStatus('Connect to Strike first.', true); return; }
+  symbol = symbol || $('#perp-symbol').value.trim();
+  const m = (perp.markets || {})[symbol];
+  let sizeNum = Number(size != null ? size : $('#perp-size').value);
+  if (!(sizeNum > 0)) { perpStatus('enter a size', true); return; }
+  if (m) {
+    const step = Number(m.order_market_step_size || 0);
+    const prec = Number(m.base_prec || 8);
+    sizeNum = roundToStep(sizeNum, step, prec);
+    if (!reduceOnly) {
+      const minSize = Number(m.order_market_min_size || 0);
+      const maxSize = Number(m.order_market_max_size || 0);
+      const minNotional = Number(m.order_min_notional || 0);
+      const px = Number(m.mark_price || m.last_price || 0);
+      if (minSize && sizeNum < minSize) { perpStatus(`min size for ${symbol} is ${minSize} ${m.base_asset}`, true); return; }
+      if (maxSize && sizeNum > maxSize) { perpStatus(`max market size for ${symbol} is ${maxSize} ${m.base_asset}`, true); return; }
+      if (minNotional && px && sizeNum * px < minNotional) {
+        perpStatus(`below min notional $${minNotional} — need ≥ ${Math.ceil(minNotional / px)} ${m.base_asset}`, true); return;
+      }
+    }
+  }
+  const sizeStr = String(sizeNum);
+  try {
+    perpStatus(`${reduceOnly ? 'closing' : 'placing'} ${position} ${sizeStr} ${symbol}…`);
+    const r = await fetch('/api/strike/order', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.walletAddr, symbol, position, type: 'market', size: sizeStr, reduceOnly }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.status);
+    perpStatus(`${reduceOnly ? 'close' : position + ' order'} submitted ✓`);
+    setTimeout(() => { loadPerpPositions(); loadPerpBalances(); }, 1500);
+  } catch (e) { perpStatus('order failed: ' + (e.message || e), true); }
+}
+
+async function loadPerpPositions() {
+  if (!state.walletAddr) {
+    $('#perp-pos-empty').style.display = ''; $('#perp-pos-panel').style.display = 'none';
+    return;
+  }
+  try {
+    const r = await fetch('/api/strike/positions?address=' + encodeURIComponent(state.walletAddr));
+    const data = await r.json();
+    if (data && data.error && /user not found/i.test(data.error)) {
+      $('#perp-pos-empty').textContent = 'No Strike account yet — connect and deposit to start.';
+      $('#perp-pos-empty').style.display = ''; $('#perp-pos-panel').style.display = 'none'; return;
+    }
+    if (!r.ok) throw new Error((data && data.error) || r.status);
+    console.log('[perps] positions raw:', data);
+    // Live shape: { count, positions:[ { id, symbol, size, entry_price, leverage,
+    // upnl, liquidation_price, ... } ] }. There is NO side field — direction is the
+    // SIGN of size (positive = long, negative = short).
+    const list = (Array.isArray(data) ? data : (data.positions || data.data || []))
+      .filter(p => Number(p.size ?? p.Size ?? 0) !== 0);
+    const tbody = $('#perp-pos tbody');
+    if (!list.length) {
+      $('#perp-pos-empty').textContent = 'No open perp positions.';
+      $('#perp-pos-empty').style.display = ''; $('#perp-pos-panel').style.display = 'none'; return;
+    }
+    $('#perp-pos-empty').style.display = 'none'; $('#perp-pos-panel').style.display = '';
+    perp.positions = list;
+    tbody.innerHTML = list.map((p, i) => {
+      const sizeN = Number(p.size ?? p.Size ?? 0);
+      const isLong = sizeN >= 0;
+      const symbol = p.symbol || p.Symbol || '—';
+      const entry = p.entry_price || p.EntryPrice || p.entryPrice || '—';
+      const lev = p.leverage ?? p.Leverage ?? '—';
+      const upnl = p.upnl ?? p.unrealized_pnl ?? '';
+      const pnlNum = Number(upnl);
+      const liq = p.liquidation_price || p.liquidationPrice;
+      return `<tr class="row">
+        <td>${isLong ? '🔼 Long' : '🔻 Short'}</td>
+        <td><code>${escapeHtml(symbol)}</code>${liq ? `<br><span class="muted" style="font-size:0.7rem">liq ${escapeHtml(String(liq)).slice(0,8)}</span>` : ''}</td>
+        <td class="num">${Math.abs(sizeN).toLocaleString()}</td>
+        <td class="num">${escapeHtml(String(entry))}</td>
+        <td class="num">${escapeHtml(String(lev))}x</td>
+        <td class="num" style="color:${pnlNum>=0?'var(--success)':'var(--error)'}">${upnl !== '' ? (pnlNum>=0?'+':'')+Number(upnl).toFixed(4) : '—'}</td>
+        <td><button class="action" data-perp-close="${i}">Close</button></td>
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('button[data-perp-close]').forEach(b => {
+      b.addEventListener('click', () => perpClosePosition(Number(b.dataset.perpClose)));
+    });
+  } catch (e) {
+    $('#perps-error').textContent = 'load positions failed: ' + (e.message || e);
+  }
+}
+
+// Close = reduce-only market order on the opposite side, for the full size.
+async function perpClosePosition(idx) {
+  const p = (perp.positions || [])[idx];
+  if (!p) return;
+  const sizeN = Number(p.size ?? p.Size ?? 0);
+  const symbol = p.symbol || p.Symbol;
+  const isLong = sizeN >= 0;
+  if (!confirm(`Close this ${isLong ? 'long' : 'short'} ${symbol} position (${Math.abs(sizeN)})?`)) return;
+  const closePosition = isLong ? 'Short' : 'Long'; // opposite side to flatten
+  await perpOrder(closePosition, { reduceOnly: true, size: Math.abs(sizeN), symbol });
+}
+
+$('#perp-connect').addEventListener('click', perpConnect);
+$('#perp-deposit').addEventListener('click', perpDeposit);
+$('#perp-set-lev').addEventListener('click', perpSetLeverage);
+$('#perp-long').addEventListener('click', () => perpOrder('Long'));
+$('#perp-short').addEventListener('click', () => perpOrder('Short'));
+$('#perp-lev').addEventListener('input', e => { $('#perp-lev-label').textContent = e.target.value + 'x'; });
+$('#perp-symbol').addEventListener('change', applyPerpMarket);
+$('#perp-withdraw').addEventListener('click', perpWithdraw);
+$('#perp-withdraw-max').addEventListener('click', perpMaxWithdraw);
+$('#perp-refresh').addEventListener('click', () => { refreshPerpStatus(); loadPerpPositions(); });
+$('#perp-hist-refresh').addEventListener('click', loadPerpHistory);
 
 // =================== boot ===================
 $('#connect').addEventListener('click', connectLace);

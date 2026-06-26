@@ -62,7 +62,7 @@ func (m *mockTxSource) SubmitTx(_ context.Context, _ sources.SubmitParams) (stri
 
 func newTestServer(srcs ...sources.Source) *Server {
 	w := wallet.New(nil, 0)
-	return New(":0", w, srcs...)
+	return New(":0", w, nil, srcs...)
 }
 
 func TestHealthEndpoint(t *testing.T) {

@@ -2,6 +2,7 @@ package sources
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 )
@@ -181,6 +182,27 @@ func (c *CachedSource) BuildClose(ctx context.Context, p TxCloseParams) (*BuiltT
 		return b.BuildClose(ctx, p)
 	}
 	return nil, ErrUnsupportedTxBuilder
+}
+
+func (c *CachedSource) SubmitTracked(ctx context.Context, address, unsignedCbor, witnessHex string, trackedOrder json.RawMessage) (string, error) {
+	if t, ok := c.inner.(TrackedSubmitter); ok {
+		return t.SubmitTracked(ctx, address, unsignedCbor, witnessHex, trackedOrder)
+	}
+	return "", ErrUnsupportedTxBuilder
+}
+
+func (c *CachedSource) Assemble(ctx context.Context, address, unsignedCbor string, witnesses []string, canonical bool) (string, error) {
+	if t, ok := c.inner.(TrackedSubmitter); ok {
+		return t.Assemble(ctx, address, unsignedCbor, witnesses, canonical)
+	}
+	return "", ErrUnsupportedTxBuilder
+}
+
+func (c *CachedSource) Submit(ctx context.Context, address, signedTx string) (string, error) {
+	if t, ok := c.inner.(TrackedSubmitter); ok {
+		return t.Submit(ctx, address, signedTx)
+	}
+	return "", ErrUnsupportedTxBuilder
 }
 
 func itoa(n int) string {

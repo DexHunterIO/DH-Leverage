@@ -11,10 +11,15 @@ import (
 	"dh-leverage/common/config"
 	mongodb "dh-leverage/common/database/mongo"
 	redisdb "dh-leverage/common/database/redis"
+	dexhunter "dh-leverage/common/dexhunter-sdk"
+	"dh-leverage/common/engine"
 	"dh-leverage/common/sources"
 	"dh-leverage/common/sources/liqwid"
 	"dh-leverage/common/sources/surf"
+	"dh-leverage/common/strike"
 	"dh-leverage/common/wallet"
+
+	"github.com/Salvionied/apollo/constants"
 )
 
 func main() {
@@ -68,8 +73,102 @@ func runAPI() {
 
 	walletClient := wallet.New(balanceCache, 30*time.Second)
 
-	srv := api.New(addr, walletClient, srcs...)
+	eng, engDisabledReason := buildEngine(bootCtx, srcs)
+
+	srv := api.New(addr, walletClient, eng, srcs...)
+	strikeClient := strike.New(config.STRIKE_BUILDER_CODE, config.STRIKE_FEE_BPS).WithBase(config.STRIKE_BASE_URL).WithWithdrawLeader(config.STRIKE_WITHDRAW_LEADER)
+	srv.SetStrike(strikeClient, strike.NewStore())
+	srv.SetStrikeHistory(buildStrikeHistory(bootCtx))
+	log.Printf("strike v2 enabled (base=%s, builder=%v, feeBps=%d)", config.STRIKE_BASE_URL, strikeClient.BuilderEnabled(), config.STRIKE_FEE_BPS)
+	if strikeClient.BuilderEnabled() && config.STRIKE_FEE_BPS == 0 {
+		log.Printf("strike: WARNING — builder code set but STRIKE_FEE_BPS=0, so orders collect NO builder fee")
+	}
+	if eng == nil {
+		srv.SetEngineDisabledReason(engDisabledReason)
+	} else {
+		// Long-lived context so the health monitor runs for the process
+		// lifetime (bootCtx is only for startup).
+		eng.StartHealthMonitor(context.Background())
+		// Resume any positions that were mid-flight before this restart.
+		eng.RecoverInflight(context.Background())
+	}
 	log.Fatal(srv.Start())
+}
+
+// buildEngine wires the leverage engine. It needs BlockFrost (to build the
+// funding/sweep txs and read temp-address state), a DexHunter partner key
+// (swap legs), and an encryption key (to seal temp signing keys). If the
+// required config is missing the engine is left nil and the /api/leverage/*
+// routes return 503 — the rest of the API still runs.
+func buildEngine(ctx context.Context, srcs []sources.Source) (*engine.Engine, string) {
+	if config.BLOCKFROST_PROJECT_ID == "" || config.ENGINE_ENC_KEY == "" {
+		reason := "leverage engine disabled: set BLOCKFROST_PROJECT_ID and ENGINE_ENC_KEY (the DexHunter partner key is optional)"
+		log.Printf("%s", reason)
+		return nil, reason
+	}
+	network := parseNetwork(config.CARDANO_NETWORK)
+	chain, err := engine.NewChain(config.BLOCKFROST_PROJECT_ID, config.BLOCKFROST_BASE_URL, network)
+	if err != nil {
+		reason := fmt.Sprintf("leverage engine disabled: blockfrost chain context: %v", err)
+		log.Printf("%s", reason)
+		return nil, reason
+	}
+	store, durable := buildJobStore(ctx)
+	// SAFETY: the engine holds the only copy of each position's (encrypted)
+	// temp signing key in the job store. With the in-memory fallback those
+	// keys vanish on restart, stranding any funds at the temp address with no
+	// way to recover them. Never run the engine non-durably against real
+	// mainnet funds — disable it instead so no position can be created.
+	if !durable && network == constants.MAINNET {
+		reason := "leverage engine disabled: mainnet requires a durable job store (Mongo) so temp keys survive a restart — the in-memory fallback would strand funds. Start Mongo at DATABASE_URL and retry."
+		log.Printf("%s", reason)
+		return nil, reason
+	}
+	if !durable {
+		log.Printf("WARNING: leverage engine using in-memory job store — temp keys are lost on restart. Acceptable only on a testnet.")
+	}
+	dex := dexhunter.New(config.DEXHUNTER_PARTNER_ID)
+	log.Printf("leverage engine enabled (network=%s, dexhunter=%v, durable=%v)", config.CARDANO_NETWORK, config.DEXHUNTER_PARTNER_ID != "", durable)
+	return engine.New(srcs, dex, chain, store, config.ENGINE_ENC_KEY, network), ""
+}
+
+// buildJobStore returns the leverage job store and whether it is durable
+// (Mongo-backed). A non-durable (in-memory) store loses temp signing keys on
+// restart, so callers gate real-fund operation on durability.
+func buildJobStore(ctx context.Context) (engine.JobStore, bool) {
+	store, err := engine.NewMongoJobStore(ctx, config.DATABASE_URL, "dh-leverage")
+	if err != nil {
+		log.Printf("leverage job store: mongo unavailable (%v) — in-memory fallback (non-durable)", err)
+		return engine.NewMemoryJobStore(), false
+	}
+	log.Printf("leverage job store: mongo enabled (durable)")
+	return store, true
+}
+
+// buildStrikeHistory returns a Mongo-backed deposit/withdrawal history store,
+// falling back to in-memory when Mongo is unavailable (mirroring the cache/
+// persister degradation pattern). In-memory history is lost on restart.
+func buildStrikeHistory(ctx context.Context) strike.History {
+	h, err := mongodb.NewStrikeHistory(ctx, config.DATABASE_URL)
+	if err != nil {
+		log.Printf("strike history: mongo unavailable (%v) — in-memory fallback (lost on restart)", err)
+		return strike.NewMemoryHistory()
+	}
+	log.Printf("strike history: mongo enabled (durable)")
+	return h
+}
+
+func parseNetwork(name string) constants.Network {
+	switch name {
+	case "preview":
+		return constants.PREVIEW
+	case "preprod":
+		return constants.PREPROD
+	case "testnet":
+		return constants.TESTNET
+	default:
+		return constants.MAINNET
+	}
 }
 
 // wrapSource composes a raw protocol source with persistence (inner layer)

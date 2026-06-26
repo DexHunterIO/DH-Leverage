@@ -1,8 +1,9 @@
 package dexhunter
 
-// Token IDs in DexHunter requests are encoded as `policyId.assetNameHex`,
-// or the literal empty string for ADA. Helpers in this package use plain
-// strings to keep the call sites obvious.
+import "encoding/json"
+
+// Token IDs in DexHunter requests are the policy id and asset-name hex
+// concatenated (no separator), or the literal empty string for ADA.
 
 // Split is one leg of a routed swap: how much of the input goes through
 // which pool on which DEX. Returned by every estimate/swap response.
@@ -47,14 +48,14 @@ type EstimateRequest struct {
 }
 
 type EstimateResponse struct {
-	TotalInput      float64 `json:"total_input"`
-	TotalOutput     float64 `json:"total_output"`
-	NetPrice        float64 `json:"net_price"`
-	NetPriceReverse float64 `json:"net_price_reverse,omitempty"`
-	PriceImpact     float64 `json:"price_impact,omitempty"`
-	Fees            Fees    `json:"fees"`
-	Splits          []Split `json:"splits"`
-	PossibleRoutes  []Route `json:"possible_routes,omitempty"`
+	TotalInput      float64         `json:"total_input"`
+	TotalOutput     float64         `json:"total_output"`
+	NetPrice        float64         `json:"net_price"`
+	NetPriceReverse float64         `json:"net_price_reverse,omitempty"`
+	PriceImpact     float64         `json:"price_impact,omitempty"`
+	Fees            Fees            `json:"fees"`
+	Splits          []Split         `json:"splits"`
+	PossibleRoutes  json.RawMessage `json:"possible_routes,omitempty"`
 }
 
 // --- /swap/reverseEstimate --------------------------------------------------
@@ -76,7 +77,7 @@ type ReverseEstimateResponse struct {
 	Splits      []Split `json:"splits"`
 }
 
-// --- /swap/swap -------------------------------------------------------------
+// --- /swap/build ------------------------------------------------------------
 
 // SwapRequest is the executable swap. The CBOR returned in SwapResponse
 // is unsigned; sign with the user's wallet then submit via Sign().
@@ -91,20 +92,22 @@ type SwapRequest struct {
 }
 
 type SwapResponse struct {
-	CBOR           string   `json:"cbor"`
-	TotalInput     float64  `json:"total_input"`
-	TotalOutput    float64  `json:"total_output"`
-	Fees           Fees     `json:"fees"`
-	Splits         []Split  `json:"splits"`
-	PossibleRoutes []Route  `json:"possible_routes,omitempty"`
-	Communications []string `json:"communications,omitempty"`
+	CBOR           string          `json:"cbor"`
+	TotalInput     float64         `json:"total_input"`
+	TotalOutput    float64         `json:"total_output"`
+	Fees           Fees            `json:"fees"`
+	Splits         []Split         `json:"splits"`
+	PossibleRoutes json.RawMessage `json:"possible_routes,omitempty"`
+	Communications []string        `json:"communications,omitempty"`
 }
 
 // --- /swap/sign -------------------------------------------------------------
 
 type SignRequest struct {
-	TxCBOR     string   `json:"txCbor"`
-	Signatures []string `json:"Signatures"`
+	TxCBOR string `json:"txCbor"`
+	// Signatures is a single witness-set CBOR hex (NOT an array) containing the
+	// wallet's vkey witnesses — DexHunter merges it into the built tx.
+	Signatures string `json:"Signatures"`
 }
 
 type SignResponse struct {
@@ -138,12 +141,12 @@ type LimitOrderRequest struct {
 }
 
 type LimitOrderResponse struct {
-	CBOR           string  `json:"cbor"`
-	TotalInput     float64 `json:"total_input,omitempty"`
-	TotalOutput    float64 `json:"total_output"`
-	Fees           Fees    `json:"fees"`
-	Splits         []Split `json:"splits"`
-	PossibleRoutes []Route `json:"possible_routes,omitempty"`
+	CBOR           string          `json:"cbor"`
+	TotalInput     float64         `json:"total_input,omitempty"`
+	TotalOutput    float64         `json:"total_output"`
+	Fees           Fees            `json:"fees"`
+	Splits         []Split         `json:"splits"`
+	PossibleRoutes json.RawMessage `json:"possible_routes,omitempty"`
 }
 
 // --- /swap/orders/{address} -------------------------------------------------

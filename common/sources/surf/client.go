@@ -36,6 +36,12 @@ const (
 	depositLiquidityPath = "/api/depositLiquidity"
 	withdrawLiqPath      = "/api/withdrawLiquidity"
 	borrowPath           = "/api/borrow"
+
+	// repayCollateralSlippage is the slippage tolerance (percent) for a
+	// repayWithCollateral order, which swaps the locked collateral to cover the
+	// debt. Matches the value Surf's own app sends; without it the order is built
+	// with zero tolerance and the batcher never fills it.
+	repayCollateralSlippage = 5
 )
 
 // Client fetches market data from the Surf Next.js backend.
@@ -186,7 +192,13 @@ func (c *Client) FetchMarkets(ctx context.Context) ([]sources.Market, error) {
 					AssetName: col.Asset.AssetName,
 					Symbol:    col.Asset.Ticker,
 					Decimals:  col.Asset.Decimals,
-					PriceUsd:  col.Price * adaUSD,
+					// Surf's col.Price is the collateral's price in BORROW-asset
+					// units (how much of the borrow asset 1 collateral is worth),
+					// not in ADA. Convert to ADA via the pool's borrow-asset
+					// price, then to USD. (pool.Price is 1.0 for ADA-borrow pools,
+					// so this matches the old col.Price*adaUSD there; it only
+					// differs — and fixes the price — for non-ADA-borrow pools.)
+					PriceUsd: col.Price * pool.Price * adaUSD,
 				},
 				Borrow:                borrow,
 				ReceiptAsset:          receipt,
@@ -539,6 +551,9 @@ func fetchJSON[T any](ctx context.Context, hc *http.Client, url string) (T, erro
 // logSurfCall mirrors the Liqwid helper — truncates long bodies so the
 // log stays readable when getAllPositions returns megabytes of data.
 func logSurfCall(tag string, body []byte) {
+	if !sources.Verbose() {
+		return // gated by LOG_SOURCES so it doesn't bury leverage logs
+	}
 	const maxLen = 2000
 	if body == nil {
 		log.Printf("%s", tag)
@@ -588,9 +603,16 @@ type surfTxRequest struct {
 
 type surfTxResponse struct {
 	CBOR    string   `json:"cbor"`
-	Tx      string   `json:"tx,omitempty"`      // some endpoints use "tx"
-	Witness []string `json:"witness,omitempty"` // cancelOrder may include witness for leveraged orders
+	Tx      string   `json:"tx,omitempty"`        // some endpoints use "tx"
+	Witness []string `json:"witnesses,omitempty"` // cancelOrder may include extra witnesses (often null — Surf co-signs server-side)
 	Error   string   `json:"error,omitempty"`
+	// TrackedOrder is returned by /api/repayWithCollateral; it must be handed to
+	// /api/wallet/submitTrackedOrder so the processor registers and fills the order.
+	TrackedOrder json.RawMessage `json:"trackedOrder,omitempty"`
+	// SignedTx / TxHash are returned by /api/wallet/assemble and
+	// /api/wallet/submitTrackedOrder respectively.
+	SignedTx string `json:"signedTx,omitempty"`
+	TxHash   string `json:"txHash,omitempty"`
 }
 
 // surfDecimalsForPool looks up the borrow asset's decimals so we can scale
@@ -610,12 +632,29 @@ func (c *Client) surfDecimalsForPool(ctx context.Context, poolID string) (int, e
 // collateral asset listed by the pool. Surf v1 pools have a single
 // collateral asset per pool, so "first" is correct. Used to scale
 // user-entered whole-unit collateral amounts back to raw units.
-func (c *Client) surfCollateralDecimalsForPool(ctx context.Context, poolID string) (int, error) {
+// surfCollateralDecimalsForPool returns the decimals of the collateral asset
+// identified by collateralUnit (policyId+assetNameHex, "" = ADA). A Surf pool
+// can list several collaterals with different decimals, so matching the exact
+// one is required — falling back to the first collateral (or ADA's 6) only when
+// no unit is given or no match is found.
+func (c *Client) surfCollateralDecimalsForPool(ctx context.Context, poolID, collateralUnit string) (int, error) {
 	pools, err := fetchJSON[poolInfosResponse](ctx, c.http, c.base+poolInfosPath)
 	if err != nil {
 		return 0, err
 	}
-	if p, ok := pools.PoolInfos[poolID]; ok && len(p.CollateralAssets) > 0 {
+	p, ok := pools.PoolInfos[poolID]
+	if !ok {
+		return 0, nil
+	}
+	for _, col := range p.CollateralAssets {
+		if col.Asset.PolicyID+col.Asset.AssetName == collateralUnit {
+			return col.Asset.Decimals, nil
+		}
+	}
+	if collateralUnit == "" {
+		return 6, nil // ADA collateral not explicitly listed — ADA has 6 decimals
+	}
+	if len(p.CollateralAssets) > 0 {
 		return p.CollateralAssets[0].Asset.Decimals, nil
 	}
 	return 0, nil
@@ -655,25 +694,43 @@ func (c *Client) postTxBuild(ctx context.Context, path string, body any) (string
 }
 
 func (c *Client) postTxBuildOnce(ctx context.Context, path string, body any) (string, error) {
+	out, err := c.postTxBuildOnceResp(ctx, path, body)
+	if err != nil {
+		return "", err
+	}
+	cbor := out.CBOR
+	if cbor == "" {
+		cbor = out.Tx
+	}
+	if cbor == "" {
+		return "", fmt.Errorf("surf %s: empty cbor in response", path)
+	}
+	return cbor, nil
+}
+
+// postTxBuildOnceResp POSTs a {"request": body} payload and returns the full
+// decoded response (so callers can read trackedOrder / signedTx / txHash, not
+// just the cbor).
+func (c *Client) postTxBuildOnceResp(ctx context.Context, path string, body any) (*surfTxResponse, error) {
 	// Surf's live API still expects the body wrapped in {"request": ...}
 	// even though the official docs at surflending.org/api-docs show flat
 	// bodies. Without the wrapper, the server returns 500 "Cannot read
 	// properties of undefined (reading 'poolId')".
 	wrapped, err := json.Marshal(map[string]any{"request": body})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	logSurfCall("→ surf POST "+c.base+path, wrapped)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base+path, bytes.NewReader(wrapped))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("surf %s: %w", path, err)
+		return nil, fmt.Errorf("surf %s: %w", path, err)
 	}
 	defer resp.Body.Close()
 	respBytes, _ := io.ReadAll(resp.Body)
@@ -682,25 +739,139 @@ func (c *Client) postTxBuildOnce(ctx context.Context, path string, body any) (st
 		// Try to decode the error message so the retry classifier can read it.
 		var errBody surfTxResponse
 		if json.Unmarshal(respBytes, &errBody) == nil && errBody.Error != "" {
-			return "", fmt.Errorf("surf %s: status %d: %s", path, resp.StatusCode, errBody.Error)
+			return nil, fmt.Errorf("surf %s: status %d: %s", path, resp.StatusCode, errBody.Error)
 		}
-		return "", fmt.Errorf("surf %s: status %d: %s", path, resp.StatusCode, truncate(string(respBytes), 240))
+		return nil, fmt.Errorf("surf %s: status %d: %s", path, resp.StatusCode, truncate(string(respBytes), 240))
 	}
 	var out surfTxResponse
 	if err := json.Unmarshal(respBytes, &out); err != nil {
-		return "", fmt.Errorf("surf %s decode: %w", path, err)
+		return nil, fmt.Errorf("surf %s decode: %w", path, err)
 	}
 	if out.Error != "" {
-		return "", fmt.Errorf("surf %s: %s", path, out.Error)
+		return nil, fmt.Errorf("surf %s: %s", path, out.Error)
 	}
-	cbor := out.CBOR
-	if cbor == "" {
-		cbor = out.Tx
+	return &out, nil
+}
+
+// postTxBuildResp builds a tx and returns the full response (cbor + any
+// trackedOrder / witness fields), retrying transient Blockfrost failures.
+func (c *Client) postTxBuildResp(ctx context.Context, path string, body any) (*surfTxResponse, error) {
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(attempt) * 800 * time.Millisecond):
+			}
+		}
+		out, e := c.postTxBuildOnceResp(ctx, path, body)
+		if e == nil {
+			if out.CBOR == "" && out.Tx == "" {
+				return nil, fmt.Errorf("surf %s: empty cbor in response", path)
+			}
+			return out, nil
+		}
+		lastErr = e
+		if !surfBlockfrostRetryable(e.Error()) {
+			return nil, e
+		}
 	}
-	if cbor == "" {
-		return "", fmt.Errorf("surf %s: empty cbor in response: %s", path, truncate(string(respBytes), 240))
+	return nil, lastErr
+}
+
+// Submit broadcasts an assembled signed tx through Surf's /api/wallet/submit,
+// which CO-SIGNS with Surf's server-held keys (the order/processor key) before
+// submitting — required for cancelling a leveraged order, whose key Surf holds
+// (the cancelOrder response's `witnesses` is null). Returns the tx hash.
+func (c *Client) Submit(ctx context.Context, address, signedTx string) (string, error) {
+	out, err := c.postWalletAction(ctx, "/api/wallet/submit", map[string]any{
+		"address": address,
+		"tx":      signedTx,
+	})
+	if err != nil {
+		return "", fmt.Errorf("surf submit: %w", err)
 	}
-	return cbor, nil
+	if out.TxHash == "" {
+		return "", fmt.Errorf("surf submit: empty txHash")
+	}
+	return out.TxHash, nil
+}
+
+// Assemble merges witness-set CBORs into the build-time tx via
+// /api/wallet/assemble and returns the complete signed tx, ready to broadcast.
+func (c *Client) Assemble(ctx context.Context, address, unsignedCbor string, witnesses []string, canonical bool) (string, error) {
+	out, err := c.postWalletAction(ctx, "/api/wallet/assemble", map[string]any{
+		"address":   address,
+		"tx":        unsignedCbor,
+		"witnesses": witnesses,
+		"canonical": canonical,
+	})
+	if err != nil {
+		return "", fmt.Errorf("surf assemble: %w", err)
+	}
+	if out.SignedTx == "" {
+		return "", fmt.Errorf("surf assemble: empty signedTx")
+	}
+	return out.SignedTx, nil
+}
+
+// SubmitTracked completes a tracked-order action (repayWithCollateral): it
+// assembles the unsigned tx with the wallet's witness via /api/wallet/assemble,
+// then submits it via /api/wallet/submitTrackedOrder so Surf's processor
+// registers and fills the order. Returns the submitted tx hash. witnessHex is the
+// payment witness-set CBOR (hex). This is the step that was missing — broadcasting
+// the signed tx straight to chain leaves the order an unfilled orphan.
+func (c *Client) SubmitTracked(ctx context.Context, address, unsignedCbor, witnessHex string, trackedOrder json.RawMessage) (string, error) {
+	signedTx, err := c.Assemble(ctx, address, unsignedCbor, []string{witnessHex}, false)
+	if err != nil {
+		return "", err
+	}
+	submitted, err := c.postWalletAction(ctx, "/api/wallet/submitTrackedOrder", map[string]any{
+		"address":      address,
+		"tx":           signedTx,
+		"trackedOrder": trackedOrder,
+	})
+	if err != nil {
+		return "", fmt.Errorf("surf submitTrackedOrder: %w", err)
+	}
+	if submitted.TxHash == "" {
+		return "", fmt.Errorf("surf submitTrackedOrder: empty txHash")
+	}
+	return submitted.TxHash, nil
+}
+
+// postWalletAction POSTs a FLAT body (no {"request": ...} wrapper) to a
+// /api/wallet/* action endpoint (assemble / submitTrackedOrder) and decodes the
+// response. These take the fields directly (address/tx/witnesses/trackedOrder),
+// unlike the build endpoints.
+func (c *Client) postWalletAction(ctx context.Context, path string, body any) (*surfTxResponse, error) {
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	logSurfCall("→ surf POST "+c.base+path, buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base+path, bytes.NewReader(buf))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("surf %s: %w", path, err)
+	}
+	defer resp.Body.Close()
+	respBytes, _ := io.ReadAll(resp.Body)
+	logSurfCall(fmt.Sprintf("← surf %d %s", resp.StatusCode, path), respBytes)
+	var out surfTxResponse
+	if json.Unmarshal(respBytes, &out); out.Error != "" {
+		return nil, fmt.Errorf("surf %s: %s", path, out.Error)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("surf %s: status %d: %s", path, resp.StatusCode, truncate(string(respBytes), 240))
+	}
+	return &out, nil
 }
 
 // surfPoolRate returns totalSupplied / totalCToken for a pool — the raw
@@ -770,7 +941,7 @@ func (c *Client) BuildWithdraw(ctx context.Context, p sources.TxParams) (*source
 		// imprecision in the rate calculation.
 		fTokenAmount--
 	}
-	log.Printf("surf withdraw: underlying=%.0f rate=%.6f full=%v → fTokenAmount=%d",
+	sources.Debugf("surf withdraw: underlying=%.0f rate=%.6f full=%v → fTokenAmount=%d",
 		underlyingRaw, rate, p.Full, fTokenAmount)
 	body := surfTxRequest{
 		PoolID:    p.MarketID,
@@ -912,6 +1083,11 @@ func (c *Client) BuildClose(ctx context.Context, p sources.TxCloseParams) (*sour
 	switch kind {
 	case "repay":
 		path = "/api/repay"
+	case "repayWithCollateral":
+		// Repays the debt out of the locked collateral itself (no borrow
+		// asset needed in the wallet) and returns the remaining collateral —
+		// the right primitive for unwinding a leverage position.
+		path = "/api/repayWithCollateral"
 	case "cancel":
 		path = "/api/cancelOrder"
 	default:
@@ -921,13 +1097,12 @@ func (c *Client) BuildClose(ctx context.Context, p sources.TxCloseParams) (*sour
 	txHash := p.TxHash
 	outIdx := p.OutputIndex
 
-	// For repay: the cached outRef may be stale because the on-chain
-	// UTxO moves when interest accrues or the position gets rebatched.
-	// Re-fetch the current positions and find the live outRef for this
-	// pool+address before calling the repay endpoint.
-	if kind == "repay" {
+	// For a repay the cached outRef may be stale because the on-chain UTxO
+	// moves when interest accrues or the position gets rebatched. Re-fetch the
+	// current position's live outRef before calling the endpoint.
+	if kind == "repay" || kind == "repayWithCollateral" {
 		if fresh, err := c.freshOutRef(ctx, p.Address, p.MarketID); err == nil && fresh != nil {
-			log.Printf("surf close: refreshed outRef %s#%d → %s#%d",
+			sources.Debugf("surf close: refreshed outRef %s#%d → %s#%d",
 				txHash, outIdx, fresh.TxHash, fresh.OutputIndex)
 			txHash = fresh.TxHash
 			outIdx = fresh.OutputIndex
@@ -943,16 +1118,35 @@ func (c *Client) BuildClose(ctx context.Context, p sources.TxCloseParams) (*sour
 		},
 		"canonical": false,
 	}
+	// repayWithCollateral swaps the locked collateral to cover the debt, so the
+	// order carries a slippage tolerance (Surf's own app sends slippage:5).
+	// Without it Surf builds a zero-tolerance order the batcher can never fill —
+	// it just sits unfilled. Plain repay/cancel involve no swap and omit it.
+	if kind == "repayWithCollateral" {
+		// repayWithCollateral swaps the locked collateral to cover the debt, so
+		// the order carries a slippage tolerance (Surf's app sends slippage:5),
+		// and must be finished via /api/wallet/submitTrackedOrder using the
+		// returned trackedOrder (a raw chain broadcast leaves it an orphan).
+		body["slippage"] = repayCollateralSlippage
+	}
 
-	cbor, err := c.postTxBuild(ctx, path, body)
+	resp, err := c.postTxBuildResp(ctx, path, body)
 	if err != nil {
 		return nil, err
+	}
+	cbor := resp.CBOR
+	if cbor == "" {
+		cbor = resp.Tx
 	}
 	return &sources.BuiltTx{
 		Source: Name,
 		Action: kind,
 		CBOR:   cbor,
-		Hint:   fmt.Sprintf("%s Surf position %s#%d", kind, truncate(txHash, 12), outIdx),
+		// repayWithCollateral → trackedOrder for submitTrackedOrder; cancel of a
+		// leveraged order → the order key's witness, which must be merged in.
+		TrackedOrder: resp.TrackedOrder,
+		Witnesses:    resp.Witness,
+		Hint:         fmt.Sprintf("%s Surf position %s#%d", kind, truncate(txHash, 12), outIdx),
 	}, nil
 }
 
@@ -996,7 +1190,7 @@ func (c *Client) BuildBorrow(ctx context.Context, p sources.TxParams) (*sources.
 	}
 	// Each collateral asset has its OWN decimals (SNEK = 0, NIGHT = 6,
 	// etc.). Don't assume it matches the borrow asset's decimals.
-	colDec, err := c.surfCollateralDecimalsForPool(ctx, p.MarketID)
+	colDec, err := c.surfCollateralDecimalsForPool(ctx, p.MarketID, p.CollateralUnit)
 	if err != nil {
 		return nil, err
 	}

@@ -261,6 +261,9 @@ func (c *Client) post(ctx context.Context, query string, vars any) (json.RawMess
 // logAPICall prints an outgoing/incoming protocol payload to stderr with
 // truncation, so dev can verify the bodies our backend sends to upstream.
 func logAPICall(tag string, body []byte) {
+	if !sources.Verbose() {
+		return // gated by LOG_SOURCES so it doesn't bury leverage logs
+	}
 	const maxLen = 2000
 	s := string(body)
 	if len(s) > maxLen {
@@ -806,7 +809,7 @@ func (c *Client) BuildClose(ctx context.Context, p sources.TxCloseParams) (*sour
 		// decimals (e.g. 3955489025.9999995) which Liqwid's BigInt
 		// coercion would reject.
 		qRaw := int64(math.Round(lc.QTokenAmount * math.Pow(10, float64(lc.Asset.Decimals))))
-		log.Printf("liqwid close: collateral %s qTokenAmount=%.10f decimals=%d → qRaw=%d",
+		sources.Debugf("liqwid close: collateral %s qTokenAmount=%.10f decimals=%d → qRaw=%d",
 			lc.Market.ID, lc.QTokenAmount, lc.Asset.Decimals, qRaw)
 		collaterals = append(collaterals, map[string]any{
 			"id":     cid,
@@ -848,7 +851,7 @@ func (c *Client) BuildClose(ctx context.Context, p sources.TxCloseParams) (*sour
 	if p.RedeemCollateral {
 		input["redeemCollateral"] = true
 	}
-	log.Printf("liqwid modifyBorrow: txId=%s amount=%v loan.Amount=%.6f loan.Interest=%.6f collaterals=%d",
+	sources.Debugf("liqwid modifyBorrow: txId=%s amount=%v loan.Amount=%.6f loan.Interest=%.6f collaterals=%d",
 		txID, input["amount"], loan.Amount, loan.Interest, len(collaterals))
 
 	data, err := c.post(ctx, txModifyBorrowMutation, map[string]any{"input": input})
@@ -934,7 +937,7 @@ func (c *Client) findLoanByTxHash(ctx context.Context, pkh, txHash string) (*raw
 	if err := json.Unmarshal(data, &env); err != nil {
 		return nil, err
 	}
-	log.Printf("liqwid findLoan: got %d loans for pkh=%s, looking for tx=%s",
+	sources.Debugf("liqwid findLoan: got %d loans for pkh=%s, looking for tx=%s",
 		len(env.Liqwid.Data.Loans.Results), pkh, txHash)
 	for i := range env.Liqwid.Data.Loans.Results {
 		l := &env.Liqwid.Data.Loans.Results[i]
@@ -995,7 +998,7 @@ func (c *Client) BuildBorrow(ctx context.Context, p sources.TxParams) (*sources.
 	}
 
 	qTokenRaw := int64(underlyingToQTokenRaw(p.CollateralAmount, coll.exchangeRate, coll.qTokenDec))
-	log.Printf("liqwid borrow: collateral %.6f %s underlying → %d raw %s (rate=%.9f, qDec=%d)",
+	sources.Debugf("liqwid borrow: collateral %.6f %s underlying → %d raw %s (rate=%.9f, qDec=%d)",
 		p.CollateralAmount, coll.underlyingSymbol, qTokenRaw, coll.id, coll.exchangeRate, coll.qTokenDec)
 
 	input["collaterals"] = []map[string]any{{

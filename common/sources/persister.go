@@ -2,6 +2,7 @@ package sources
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 )
 
@@ -92,4 +93,25 @@ func (p *PersistedSource) BuildClose(ctx context.Context, params TxCloseParams) 
 		return b.BuildClose(ctx, params)
 	}
 	return nil, ErrUnsupportedTxBuilder
+}
+
+func (p *PersistedSource) SubmitTracked(ctx context.Context, address, unsignedCbor, witnessHex string, trackedOrder json.RawMessage) (string, error) {
+	if t, ok := p.inner.(TrackedSubmitter); ok {
+		return t.SubmitTracked(ctx, address, unsignedCbor, witnessHex, trackedOrder)
+	}
+	return "", ErrUnsupportedTxBuilder
+}
+
+func (p *PersistedSource) Assemble(ctx context.Context, address, unsignedCbor string, witnesses []string, canonical bool) (string, error) {
+	if t, ok := p.inner.(TrackedSubmitter); ok {
+		return t.Assemble(ctx, address, unsignedCbor, witnesses, canonical)
+	}
+	return "", ErrUnsupportedTxBuilder
+}
+
+func (p *PersistedSource) Submit(ctx context.Context, address, signedTx string) (string, error) {
+	if t, ok := p.inner.(TrackedSubmitter); ok {
+		return t.Submit(ctx, address, signedTx)
+	}
+	return "", ErrUnsupportedTxBuilder
 }
