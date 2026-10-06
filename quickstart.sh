@@ -10,6 +10,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Pin the compose project name so the network it creates is always
+# ${COMPOSE_PROJECT}_app-network regardless of the checkout directory name.
+COMPOSE_PROJECT="dh-leverage"
+COMPOSE="docker compose -p ${COMPOSE_PROJECT} -f docker-compose-no-node.yml"
+APP_NETWORK="${COMPOSE_PROJECT}_app-network"
+
 print_color() {
     color=$1
     message=$2
@@ -62,13 +68,13 @@ show_menu() {
 
 start_infra() {
     print_color "$YELLOW" "Starting MongoDB + Redis…"
-    docker compose -f docker-compose-no-node.yml up -d
+    $COMPOSE up -d
     print_color "$GREEN" "Infra started."
 }
 
 stop_infra() {
     print_color "$YELLOW" "Stopping MongoDB + Redis…"
-    docker compose -f docker-compose-no-node.yml down
+    $COMPOSE down
     print_color "$GREEN" "Infra stopped."
 }
 
@@ -131,16 +137,34 @@ EOF
 
     docker build -f Dockerfile.api -t dh-leverage-api .
 
+    # The API container joins the compose network so DATABASE_URL / REDIS_URL
+    # can use the service hostnames (mongodb / redis). Start the infra stack
+    # if its network isn't there yet.
+    if ! docker network inspect "$APP_NETWORK" >/dev/null 2>&1; then
+        print_color "$YELLOW" "Network $APP_NETWORK not found — starting infra (MongoDB + Redis)…"
+        $COMPOSE up -d || { print_color "$RED" "Failed to start infra."; return 1; }
+    fi
+
+    # Host port comes from API_PORT in .env (accepts "8080", ":8080" or
+    # "0.0.0.0:8080"); inside the container the API always listens on 8080 so
+    # the mapping can't drift from the listen port.
+    HOST_PORT="${API_PORT##*:}"
+    HOST_PORT="${HOST_PORT:-8080}"
+
     docker rm -f dh-leverage-api 2>/dev/null
     docker run -d \
         --name dh-leverage-api \
         --restart always \
         --env-file .env \
-        -p ${API_PORT:-8080}:8080 \
-        --network docker-compose-no-node_app-network \
-        dh-leverage-api
+        -e API_PORT=8080 \
+        -p "${HOST_PORT}:8080" \
+        --network "$APP_NETWORK" \
+        dh-leverage-api || { print_color "$RED" "Failed to start dh-leverage-api."; return 1; }
 
-    print_color "$GREEN" "API deployed on port ${API_PORT:-8080}."
+    print_color "$GREEN" "API deployed on http://localhost:${HOST_PORT}"
+    print_color "$YELLOW" "Note: inside the container DATABASE_URL / REDIS_URL must use the service hostnames,"
+    print_color "$YELLOW" "      e.g. mongodb://admin:<pw>@mongodb:27017/dh-leverage?authSource=admin and redis://:<pw>@redis:6379"
+    print_color "$YELLOW" "      (localhost inside the container is the container itself). Check: docker logs dh-leverage-api"
 }
 
 # --- monitoring ------------------------------------------------------------
@@ -161,7 +185,7 @@ show_logs() {
         1) docker logs -f mongodb ;;
         2) docker logs -f redis ;;
         3) docker logs -f dh-leverage-api ;;
-        4) docker compose -f docker-compose-no-node.yml logs -f ;;
+        4) $COMPOSE logs -f ;;
         b) return ;;
         *) print_color "$RED" "Invalid option."; show_logs ;;
     esac
