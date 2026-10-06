@@ -16,6 +16,11 @@ COMPOSE_PROJECT="dh-leverage"
 COMPOSE="docker compose -p ${COMPOSE_PROJECT} -f docker-compose-no-node.yml"
 APP_NETWORK="${COMPOSE_PROJECT}_app-network"
 
+# The project is pure Go. Force cgo off so `go run` never tries to compile
+# runtime/cgo with the host's C toolchain (fails on hosts that have gcc but no
+# libc headers: "stdlib.h: No such file or directory").
+export CGO_ENABLED=0
+
 print_color() {
     color=$1
     message=$2
