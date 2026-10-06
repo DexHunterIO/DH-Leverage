@@ -115,7 +115,10 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /out/dh-leverage .
+# -p 1 / GOMAXPROCS=1: compile one package at a time so the build fits in
+# ~1 GB RAM (parallel compiles get OOM-killed on small hosts); -s -w strips
+# debug info to shrink the binary.
+RUN CGO_ENABLED=0 GOMAXPROCS=1 go build -p 1 -trimpath -ldflags="-s -w" -o /out/dh-leverage .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
