@@ -13,6 +13,8 @@ DH-Leverage is a comprehensive leveraged trading system designed to bring advanc
 
 **Architecture:** [Technical Architecture Documentation](https://github.com/DexHunterIO/DH-Leverage/blob/main/architecture.md)
 
+**Frontend integration:** [API & wallet-flow spec for the frontend](frontend-spec.md)
+
 ### Key Features
 
 - **Multi-Protocol Integration**: Seamlessly connects with leading Cardano lending protocols (Liqwid, Levvy, Flow)

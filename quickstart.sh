@@ -110,7 +110,7 @@ deploy_api() {
     print_color "$YELLOW" "Building dh-leverage-api Docker image…"
 
     cat > Dockerfile.api <<'EOF'
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
