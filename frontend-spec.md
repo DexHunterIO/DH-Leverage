@@ -1,6 +1,6 @@
 # DH-Leverage — Frontend Integration Spec
 
-Written for the team building the Milestone 4 frontend. It describes every HTTP
+Written for the team building the Milestone 5 frontend. It describes every HTTP
 route the Go backend (`go run main.go api`) exposes, the exact request and
 response shapes, and the CIP-30 wallet steps the browser has to perform between
 calls. The embedded test UI in `web/index.html` is a working reference
